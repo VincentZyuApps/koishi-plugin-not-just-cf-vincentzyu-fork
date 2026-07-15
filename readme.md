@@ -6,7 +6,12 @@
 
 [![npm version](https://img.shields.io/npm/v/koishi-plugin-not-just-cf-vincentzyu-fork?style=flat-square&logo=npm)](https://www.npmjs.com/package/koishi-plugin-not-just-cf-vincentzyu-fork)
 [![npm downloads](https://img.shields.io/npm/dm/koishi-plugin-not-just-cf-vincentzyu-fork?style=flat-square&logo=npm)](https://www.npmjs.com/package/koishi-plugin-not-just-cf-vincentzyu-fork)
+
 [![license](https://img.shields.io/badge/license-MIT-2ea44f?style=flat-square&logo=opensourceinitiative&logoColor=white)](https://opensource.org/license/mit)
+
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Puppeteer](https://img.shields.io/badge/Puppeteer-HTML-40B5A4?style=flat-square&logo=puppeteer&logoColor=white)](https://pptr.dev/)
+[![WebAssembly](https://img.shields.io/badge/Takumi-WASM-654FF0?style=flat-square&logo=webassembly&logoColor=white)](https://github.com/kane50613/takumi)
 
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/VincentZyuApps/koishi-plugin-not-just-cf-vincentzyu-fork)
 [![Gitee](https://img.shields.io/badge/Gitee-C71D23?style=for-the-badge&logo=gitee&logoColor=white)](https://gitee.com/vincent-zyu/koishi-plugin-not-just-cf-vincentzyu-fork)
@@ -14,9 +19,11 @@
 [![Koishi Forum](https://img.shields.io/badge/Koishi%20Forum-xxxxx-5546A3?style=for-the-badge&logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAABU0lEQVR42p2UQSsFYRSGnxnqLuytKWKpKFkQNsS%2FsOHPWPADLCmxU5S7UzYWNrJR7lYiRF2FeWzOMKZ7mXHqNNP5vvP2nu%2B850CY2lP4X1K31ZbaDm%2BpO%2Bpyp5wfAXVEPfRvO1JHf4AVQGbUh7j4EZ4VkrNCXPVRnf3CUBN1SH2KC28VGOV3ntRhNclZHdcAKYM11QR1oVBOXctzFlNgBTC8qmXxPQEegbVeYApIgJT6tg%2F0AdMp0B%2FBpCabK2AAmAAa%2F2GRBft1oBFPkqTAba7LCiAfQC9wClwAY1HJHepuiO29Yrsf1Dn1uiDU3RTYCtTkl1Leg8k9MB4NGgReI28rV3azgyCz0og01Xl1Uz1QX8uCTELm3UbkTF1VJ9Wr0tn3iBSGdjYG0XivE3VN3VD31PM4a3cc2tIGGI0VkTO7rLxGuiy25ejmjfqsvkSXui62TxaK03td4FXTAAAAAElFTkSuQmCC&logoColor=white)](https://forum.koishi.xyz/t/topic/xxxxx)
 [![QQ群](https://img.shields.io/badge/QQ%E7%BE%A4-1085190201-12B7F5?style=flat-square&logo=qq&logoColor=white)](https://qm.qq.com/q/ZN7fxZ3qCq)
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Puppeteer](https://img.shields.io/badge/Puppeteer-40B5A4?style=flat-square&logo=puppeteer&logoColor=white)](https://pptr.dev/)
-[![WebAssembly](https://img.shields.io/badge/Takumi-WASM-654FF0?style=flat-square&logo=webassembly&logoColor=white)](https://github.com/kane50613/takumi)
+<h2>💬 交流反馈</h2>
+<p>🐛 Bug 反馈 / 💡 建议 / 👨‍💻 插件开发交流，欢迎加群：</p>
+<p><del>📦 插件使用问题 / 🐛 Bug 反馈 / 👨‍💻 插件开发交流，欢迎加入 QQ 群：<b>259248174</b>（这个群 G 了）</del></p>
+<p>📦 插件使用问题 / 🐛 Bug 反馈 / 👨‍💻 插件开发交流，欢迎加入 QQ 群：<b>1085190201</b></p>
+<p>在群里直接艾特我，回复得更快哦~ ✨</p>
 
 聚合 **Codeforces、NowCoder、LeetCode、Luogu、AtCoder** 的 Koishi 多平台算法赛事助手，支持近期日程查询、每日与赛前提醒、QQ Markdown 交互，以及 Takumi 和 Puppeteer 双引擎图片输出。
 

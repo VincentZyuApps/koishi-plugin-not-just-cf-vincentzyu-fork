@@ -3,8 +3,9 @@ const pkg = require('../package.json')
 const KOISHI_LOGO_BASE64 = 'data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAABU0lEQVR42p2UQSsFYRSGnxnqLuytKWKpKFkQNsS%2FsOHPWPADLCmxU5S7UzYWNrJR7lYiRF2FeWzOMKZ7mXHqNNP5vvP2nu%2B850CY2lP4X1K31ZbaDm%2BpO%2Bpyp5wfAXVEPfRvO1JHf4AVQGbUh7j4EZ4VkrNCXPVRnf3CUBN1SH2KC28VGOV3ntRhNclZHdcAKYM11QR1oVBOXctzFlNgBTC8qmXxPQEegbVeYApIgJT6tg%2F0AdMp0B%2FBpCabK2AAmAAa%2F2GRBft1oBFPkqTAba7LCiAfQC9wClwAY1HJHepuiO29Yrsf1Dn1uiDU3RTYCtTkl1Leg8k9MB4NGgReI28rV3azgyCz0og01Xl1Uz1QX8uCTELm3UbkTF1VJ9Wr0tn3iBSGdjYG0XivE3VN3VD31PM4a3cc2tIGGI0VkTO7rLxGuiy25ejmjfqsvkSXui62TxaK03td4FXTAAAAAElFTkSuQmCC'
 
 export const usage = `
-<h1>📅 Koishi 多平台算法赛事助手</h1>
-<h2>🏷️ 当前版本：v${pkg.version}</h2>
+<h1>📅 Koishi 多平台 算法赛事 查询+推送 助手</h1>
+<h2>🧩 koishi-plugin-not-just-cf-vincentzyu-fork</h2>
+<h3>🏷️ 当前版本：v${pkg.version}</h3>
 
 <p>
   <a href="https://www.npmjs.com/package/koishi-plugin-not-just-cf-vincentzyu-fork" target="_blank">
@@ -12,6 +13,20 @@ export const usage = `
   </a>
   <a href="https://www.npmjs.com/package/koishi-plugin-not-just-cf-vincentzyu-fork" target="_blank">
     <img src="https://img.shields.io/npm/dm/koishi-plugin-not-just-cf-vincentzyu-fork?style=flat-square&logo=npm" alt="npm downloads">
+  </a>
+  <br>
+  <a href="https://opensource.org/license/mit" target="_blank">
+    <img src="https://img.shields.io/badge/license-MIT-2ea44f?style=flat-square&logo=opensourceinitiative&logoColor=white" alt="MIT License">
+  </a>
+  <br>
+  <a href="https://www.typescriptlang.org/" target="_blank">
+    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript">
+  </a>
+  <a href="https://pptr.dev/" target="_blank">
+    <img src="https://img.shields.io/badge/Puppeteer-HTML-40B5A4?style=flat-square&logo=puppeteer&logoColor=white" alt="Puppeteer HTML">
+  </a>
+  <a href="https://github.com/kane50613/takumi" target="_blank">
+    <img src="https://img.shields.io/badge/Takumi-WASM-654FF0?style=flat-square&logo=webassembly&logoColor=white" alt="Takumi WASM">
   </a>
   <br>
   <a href="https://github.com/VincentZyuApps/koishi-plugin-not-just-cf-vincentzyu-fork" target="_blank">
@@ -28,6 +43,12 @@ export const usage = `
     <img src="https://img.shields.io/badge/QQ%E7%BE%A4-1085190201-12B7F5?style=flat-square&logo=qq&logoColor=white" alt="QQ群">
   </a>
 </p>
+
+<h2>💬 交流反馈</h2>
+<p>🐛 Bug 反馈 / 💡 建议 / 👨‍💻 插件开发交流，欢迎加群：</p>
+<p><del>📦 插件使用问题 / 🐛 Bug 反馈 / 👨‍💻 插件开发交流，欢迎加入 QQ 群：<b>259248174</b>（这个群 G 了）</del></p>
+<p>📦 插件使用问题 / 🐛 Bug 反馈 / 👨‍💻 插件开发交流，欢迎加入 QQ 群：<b>1085190201</b></p>
+<p>在群里直接艾特我，回复得更快哦~ ✨</p>
 
 <p>聚合 <b>Codeforces、NowCoder、LeetCode、Luogu、AtCoder</b> 的近期比赛，支持文字、Takumi、Puppeteer 运营看板和 QQ Markdown 输出。</p>
 
