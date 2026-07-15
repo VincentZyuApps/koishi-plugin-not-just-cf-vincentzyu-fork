@@ -59,6 +59,7 @@ export const usage = `
 <summary><b>📖 运行说明（点击展开）</b></summary>
 <ul>
   <li>🔤 图片模式会自动检查 LXGW 文楷字体，优先从 Gitee 下载，失败后回退 GitHub，并执行完整 hash 校验。</li>
+  <li>📦 Puppeteer 内置资源会按内容复制到 <code>ctx.baseDir/data/assets/not-just-cf-vincentzyu-fork</code>，运行时不会直接读取或写入插件安装目录。</li>
   <li>📁 开启 <code>verboseFileLog</code> 后，各平台最后一次完整响应会写入 Koishi 根目录的 <code>cache/not-just-cf-vincentzyu-fork</code>。</li>
   <li>🐧 QQ Markdown 仅支持 QQ 官方 Bot；其他平台仍可使用文字与图片输出。</li>
   <li>🖼️ 完整说明与图片预览请前往 GitHub 或 Gitee README。</li>

@@ -8,6 +8,7 @@ import type {} from 'koishi-plugin-puppeteer'
 import type { Config } from '../config'
 import { OJ_LIST } from '../constants/oj'
 import type { Contest, RenderOptions } from '../types'
+import { ensureRuntimeAssets } from '../utils/assets'
 import { logInfo } from '../utils/logger'
 import { formatDateTime, formatDuration, formatTimeUntil } from '../utils/time'
 import { getPlatformPresentation } from './logo'
@@ -65,16 +66,16 @@ function getFontFace(fontPath?: string): string {
   return `@font-face { font-family: "ContestCustom"; src: url("${pathToFileURL(fontPath).href}") format("${format}"); font-display: block; }`
 }
 
-function renderContestCard(contest: Contest, darkMode: boolean): string {
+function renderContestCard(contest: Contest, darkMode: boolean, logoDir: string): string {
   const dateTime = formatDateTime(contest.startTime)
   const color = ojColors[contest.oj] || '#667085'
-  const presentation = getPlatformPresentation(contest.oj, darkMode)
+  const presentation = getPlatformPresentation(contest.oj, darkMode, logoDir)
   return `
     <article class="contest-card" style="--oj-color: ${color}">
       <div class="contest-main">
         <div class="contest-meta">
           <span class="platform-identity">
-            ${renderPlatformLogo(contest.oj, 'card-logo', darkMode)}
+            ${renderPlatformLogo(contest.oj, 'card-logo', darkMode, logoDir)}
             <span>${escapeHtml(presentation.label)}</span>
           </span>
           <span class="countdown">T-${escapeHtml(formatTimeUntil(contest.startTime))}</span>
@@ -88,14 +89,14 @@ function renderContestCard(contest: Contest, darkMode: boolean): string {
     </article>`
 }
 
-function renderGroups(contests: Contest[], darkMode: boolean): string {
+function renderGroups(contests: Contest[], darkMode: boolean, logoDir: string): string {
   return groupContests(contests).map((group) => `
     <section class="date-group">
       <header class="date-heading">
         <div><span class="date-marker"></span><strong>${escapeHtml(group.date)}</strong></div>
         <span>${escapeHtml(group.label)} / ${group.contests.length} 场</span>
       </header>
-      <div class="contest-list">${group.contests.map((contest) => renderContestCard(contest, darkMode)).join('')}</div>
+      <div class="contest-list">${group.contests.map((contest) => renderContestCard(contest, darkMode, logoDir)).join('')}</div>
     </section>`).join('')
 }
 
@@ -104,24 +105,24 @@ function getPlatformLogoClass(platform: string): string {
   return `platform-logo-${normalized || 'unknown'}`
 }
 
-function buildPlatformLogoStyles(platforms: string[]): string {
+function buildPlatformLogoStyles(platforms: string[], logoDir: string): string {
   return platforms.map((platform) => {
-    const presentation = getPlatformPresentation(platform, false)
+    const presentation = getPlatformPresentation(platform, false, logoDir)
     if (!presentation.logoDataUrl) return ''
     return `.${getPlatformLogoClass(platform)} { background-image: url("${presentation.logoDataUrl}"); }`
   }).join('\n')
 }
 
-function renderPlatformLogo(platform: string, className: string, darkMode: boolean): string {
-  const presentation = getPlatformPresentation(platform, darkMode)
+function renderPlatformLogo(platform: string, className: string, darkMode: boolean, logoDir: string): string {
+  const presentation = getPlatformPresentation(platform, darkMode, logoDir)
   const label = escapeHtml(presentation.label)
   if (!presentation.logoDataUrl) return `<span class="logo-mark logo-fallback ${className}">${label}</span>`
   return `<span class="logo-mark ${className}" role="img" aria-label="${label}"><i class="logo-art ${getPlatformLogoClass(platform)}" style="filter:${presentation.filter};--platform-logo-scale:${presentation.logoScale}"></i></span>`
 }
 
-function renderSpotlight(contest: Contest, darkMode: boolean): string {
+function renderSpotlight(contest: Contest, darkMode: boolean, logoDir: string): string {
   const color = ojColors[contest.oj] || '#667085'
-  const presentation = getPlatformPresentation(contest.oj, darkMode)
+  const presentation = getPlatformPresentation(contest.oj, darkMode, logoDir)
   return `
     <section class="spotlight" style="--oj-color: ${color}">
       <div class="spotlight-copy">
@@ -133,7 +134,7 @@ function renderSpotlight(contest: Contest, darkMode: boolean): string {
         </div>
       </div>
       <div class="spotlight-countdown">
-        ${renderPlatformLogo(contest.oj, 'spotlight-logo', darkMode)}
+        ${renderPlatformLogo(contest.oj, 'spotlight-logo', darkMode, logoDir)}
         <div class="countdown-copy">
           <small>距离开赛</small>
           <strong>${escapeHtml(formatTimeUntil(contest.startTime))}</strong>
@@ -143,7 +144,7 @@ function renderSpotlight(contest: Contest, darkMode: boolean): string {
     </section>`
 }
 
-function renderPlatformDistribution(contests: Contest[], darkMode: boolean): string {
+function renderPlatformDistribution(contests: Contest[], darkMode: boolean, logoDir: string): string {
   const counts = new Map<string, number>()
   for (const contest of contests) counts.set(contest.oj, (counts.get(contest.oj) || 0) + 1)
   const max = Math.max(1, ...counts.values())
@@ -153,10 +154,10 @@ function renderPlatformDistribution(contests: Contest[], darkMode: boolean): str
     const count = counts.get(platform) || 0
     const color = ojColors[platform] || '#667085'
     const width = count ? Math.max(8, Math.round(count / max * 100)) : 0
-    const presentation = getPlatformPresentation(platform, darkMode)
+    const presentation = getPlatformPresentation(platform, darkMode, logoDir)
     return `
       <div class="platform-row">
-        ${renderPlatformLogo(platform, 'platform-logo', darkMode)}
+        ${renderPlatformLogo(platform, 'platform-logo', darkMode, logoDir)}
         <span class="platform-name">${escapeHtml(presentation.label)}</span>
         <div class="platform-track"><b style="width:${width}%;background:${color}"></b></div>
         <strong>${count}</strong>
@@ -165,7 +166,12 @@ function renderPlatformDistribution(contests: Contest[], darkMode: boolean): str
   return `<div class="platform-grid">${rows}</div>`
 }
 
-export function buildContestHtml(contests: Contest[], options: RenderOptions, spotlightMaxContests = 10): string {
+export function buildContestHtml(
+  contests: Contest[],
+  options: RenderOptions,
+  logoDir: string,
+  spotlightMaxContests = 10,
+): string {
   const width = options.width || 960
   const dark = options.darkMode
   const title = options.title || '近期算法比赛日程'
@@ -174,7 +180,7 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions, sp
   const platforms = Array.from(new Set(contests.map((contest) => contest.oj)))
   const dates = Array.from(new Set(contests.map((contest) => getDateKey(contest.startTime))))
   const fontFace = getFontFace(options.fontPath)
-  const logoStyles = buildPlatformLogoStyles(Array.from(new Set<string>([...OJ_LIST, ...platforms])))
+  const logoStyles = buildPlatformLogoStyles(Array.from(new Set<string>([...OJ_LIST, ...platforms])), logoDir)
   const showSpotlight = contests.length > 0 && totalCount <= spotlightMaxContests
   const scheduleContests = showSpotlight ? contests.slice(1) : contests
   const density = contests.length <= 3 ? 'focus' : contests.length <= 8 ? 'balanced' : 'compact'
@@ -339,14 +345,14 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions, sp
         <div class="metric"><span>日程跨度</span><strong>${dates.length}</strong><small>天</small></div>
         <div class="metric"><span>下一场</span><strong>${contests[0] ? escapeHtml(formatTimeUntil(contests[0].startTime)) : '--'}</strong></div>
       </div>
-      <div class="platform-panel"><div class="panel-title">平台赛事分布</div>${renderPlatformDistribution(contests, dark)}</div>
+      <div class="platform-panel"><div class="panel-title">平台赛事分布</div>${renderPlatformDistribution(contests, dark, logoDir)}</div>
     </section>
-    ${showSpotlight ? renderSpotlight(contests[0], dark) : ''}
+    ${showSpotlight ? renderSpotlight(contests[0], dark, logoDir) : ''}
     ${!contests.length ? '<div class="empty-state"><strong>近期暂无比赛</strong><span>监控窗口内没有即将开始或正在进行的赛事</span></div>' : ''}
     ${scheduleContests.length ? `
       <section class="schedule-section">
         <header class="schedule-header"><div><span>UPCOMING SCHEDULE</span><h3>${showSpotlight ? '后续赛程' : '全部赛程'}</h3></div><span>${totalCount > contests.length ? `展示 ${contests.length}/${totalCount} 场` : `${scheduleContests.length} 场待跟进赛事`}</span></header>
-        <div class="date-grid ${density}">${renderGroups(scheduleContests, dark)}</div>
+        <div class="date-grid ${density}">${renderGroups(scheduleContests, dark, logoDir)}</div>
       </section>` : ''}
     <footer class="footer"><span>NOT-JUST-CF / OPERATIONS BOARD</span><span>Puppeteer HTML renderer · ${escapeHtml(String(width))}px</span></footer>
   </main>
@@ -388,10 +394,12 @@ export async function renderContestPuppeteerImage(
 
   const width = options.width || 960
   const deviceScaleFactor = Math.max(0.5, Math.min(5, Number(config.puppeteerDeviceScaleFactor) || 2.5))
+  const assetDir = await ensureRuntimeAssets(ctx, config)
+  const logoDir = join(assetDir, 'logo')
   const renderDir = join(ctx.baseDir, 'data', 'not-just-cf')
   const htmlPath = join(renderDir, `render-${randomUUID()}.html`)
   await mkdir(renderDir, { recursive: true })
-  await writeFile(htmlPath, buildContestHtml(contests, options, config.puppeteerSpotlightMaxContests), 'utf8')
+  await writeFile(htmlPath, buildContestHtml(contests, options, logoDir, config.puppeteerSpotlightMaxContests), 'utf8')
   let page: Awaited<ReturnType<typeof ctx.puppeteer.page>> | undefined
   try {
     page = await ctx.puppeteer.page()

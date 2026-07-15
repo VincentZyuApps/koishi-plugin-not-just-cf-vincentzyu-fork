@@ -4,6 +4,7 @@ import { Config as ConfigSchema } from './config'
 import { registerCommands } from './commands'
 import { registerAlerts } from './services/alert'
 import { ensureLxgwFont } from './utils/font'
+import { ensureRuntimeAssets } from './utils/assets'
 import { logInfo } from './utils/logger'
 
 export const name = 'not-just-cf'
@@ -22,6 +23,16 @@ export function apply(ctx: Context, config: NotJustCfConfig) {
         ctx,
         config,
         '[WARN] 图片字体预检查失败，将在命令执行时重试。',
+        `[WARN] ${error instanceof Error ? error.stack || error.message : error}`,
+      )
+    })
+  }
+  if (config.outputFormats.includes('puppeteer_image')) {
+    ensureRuntimeAssets(ctx, config).catch((error) => {
+      logInfo(
+        ctx,
+        config,
+        '[WARN] Puppeteer 运行时资源预检查失败，将在命令执行时重试。',
         `[WARN] ${error instanceof Error ? error.stack || error.message : error}`,
       )
     })

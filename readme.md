@@ -120,6 +120,7 @@ contest.list nc
 | `puppeteerImageDarkMode` | `true` | Puppeteer 图片是否使用深色模式 |
 | `puppeteerImageFontPath` | 空 | Puppeteer 自定义字体；留空自动使用 LXGW 文楷 |
 | `puppeteerShowRenderInfo` | `false` | Puppeteer 图片发送后附加渲染耗时 |
+| `assetFolderRelativePath` | `["data", "assets", "not-just-cf-vincentzyu-fork"]` | 相对于 `ctx.baseDir` 的运行时资源目录，当前只读 |
 | `qqMarkdownMaxDisplay` | `50` | QQ Markdown 最多展开的比赛数量 |
 | `alertEnabled` | `false` | 启用 Cron 每日提醒 |
 | `alertBeforeEnabled` | `false` | 启用赛前提醒 |
@@ -128,6 +129,26 @@ contest.list nc
 | `verboseFileLog` | `false` | 保存各平台最后一次完整响应文件 |
 
 完整配置请在 Koishi 控制台插件配置页面查看。
+
+## 📁 运行时资源
+
+插件包内的 `assets` 仅作为只读种子资源。启用 Puppeteer 图片模式后，插件会按文件内容将资源复制或更新到：
+
+```text
+<ctx.baseDir>/data/assets/not-just-cf-vincentzyu-fork/
+└─ logo/
+   ├─ logo.CODEFORCES.png
+   ├─ logo.牛客.png
+   ├─ logo.LeetCode.png
+   ├─ logo.洛谷.png
+   ├─ logo.洛谷.white.png
+   ├─ logo.AtCoder.png
+   └─ logo.AtCoder.white.png
+```
+
+内容相同的文件会跳过，插件升级后发生变化或新增的资源会自动覆盖或复制。Puppeteer 运行时只读取 `ctx.baseDir` 下的副本，不直接读取或写入源码目录与 npm 安装目录。
+
+`assetFolderRelativePath` 用 `string[]` 表示相对于 `ctx.baseDir` 的路径片段。该配置当前使用 `.disabled()` 只读展示，为后续开放自定义资源目录预留。
 
 ## 🔤 字体与调试文件
 

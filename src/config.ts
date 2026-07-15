@@ -2,6 +2,7 @@ import { Schema } from 'koishi'
 import { OJ_LIST, OJ_SCHEMA } from './constants/oj'
 import type { AlertTarget, OjName, OutputFormat } from './types'
 import { stringifyCompact, DEFAULT_KEYBOARD_ROWS } from './qq'
+import { DEFAULT_ASSET_FOLDER_RELATIVE_PATH } from './utils/assets'
 import { DEFAULT_VERBOSE_FILE_LOG_DIR } from './utils/logger'
 
 export const OUTPUT_FORMAT = {
@@ -45,6 +46,7 @@ export interface Config {
   puppeteerImageDarkMode: boolean
   puppeteerImageFontPath: string
   puppeteerShowRenderInfo: boolean
+  assetFolderRelativePath: string[]
 
   // ===== 定时提醒配置 =====
   alertEnabled: boolean
@@ -183,6 +185,11 @@ export const Config: Schema<Config> = Schema.intersect([
       .boolean()
       .default(false)
       .description('⏱️ 发送 Puppeteer 图片后附加渲染耗时'),
+    assetFolderRelativePath: Schema.array(Schema.string())
+      .role('table')
+      .default([...DEFAULT_ASSET_FOLDER_RELATIVE_PATH])
+      .disabled()
+      .description('📁 插件运行时资源目录，相对于 Koishi 根目录 ctx.baseDir；当前固定使用，暂不开放修改'),
   }).description('🎨 Puppeteer 图片配置'),
 
   // ===== 定时提醒配置 =====

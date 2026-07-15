@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from 'fs'
-import { resolve } from 'path'
+import { existsSync, readFileSync, statSync } from 'fs'
+import path from 'path'
 
 interface PlatformPresentationConfig {
   fileName: string
@@ -50,33 +50,34 @@ const PLATFORM_PRESENTATION: Record<string, PlatformPresentationConfig> = {
   },
 }
 
-const logoCache = new Map<string, string | null>()
-
-function resolveLogoPath(fileName: string): string | null {
-  const candidates = [
-    resolve(__dirname, '../../assets/logo', fileName),
-    resolve(__dirname, '../assets/logo', fileName),
-  ]
-  return candidates.find((candidate) => existsSync(candidate)) || null
+interface LogoCacheEntry {
+  signature: string
+  dataUrl: string
 }
 
-export function getPlatformLogoDataUrl(platform: string): string | null {
-  if (logoCache.has(platform)) return logoCache.get(platform) || null
+const logoCache = new Map<string, LogoCacheEntry>()
 
+export function getPlatformLogoDataUrl(platform: string, logoDir: string): string | null {
   const fileName = PLATFORM_PRESENTATION[platform]?.fileName
-  const filePath = fileName ? resolveLogoPath(fileName) : null
-  const dataUrl = filePath
-    ? `data:image/png;base64,${readFileSync(filePath).toString('base64')}`
-    : null
-  logoCache.set(platform, dataUrl)
+  if (!fileName) return null
+  const filePath = path.join(logoDir, fileName)
+  if (!existsSync(filePath)) return null
+
+  const stats = statSync(filePath)
+  const signature = `${stats.size}:${stats.mtimeMs}`
+  const cached = logoCache.get(filePath)
+  if (cached?.signature === signature) return cached.dataUrl
+
+  const dataUrl = `data:image/png;base64,${readFileSync(filePath).toString('base64')}`
+  logoCache.set(filePath, { signature, dataUrl })
   return dataUrl
 }
 
-export function getPlatformPresentation(platform: string, darkMode: boolean): PlatformPresentation {
+export function getPlatformPresentation(platform: string, darkMode: boolean, logoDir: string): PlatformPresentation {
   const presentation = PLATFORM_PRESENTATION[platform]
   return {
     label: presentation?.label || platform,
-    logoDataUrl: getPlatformLogoDataUrl(platform),
+    logoDataUrl: getPlatformLogoDataUrl(platform, logoDir),
     filter: presentation
       ? (darkMode ? presentation.darkFilter : presentation.lightFilter)
       : 'none',
