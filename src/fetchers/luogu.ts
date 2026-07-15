@@ -3,6 +3,9 @@ import type { Context } from 'koishi'
 import type { Config } from '../config'
 import type { Contest } from '../types'
 import { shouldIncludeContest } from '../utils/filter'
+import { logInfo, writePlatformResponseLog } from '../utils/logger'
+
+const SOURCE_URL = 'https://www.luogu.com.cn/contest/list?page=1&_contentOnly=1'
 
 interface LuoguContestEntry {
   id: number
@@ -29,8 +32,9 @@ function extractLuoguContestEntries(payload: string | Record<string, any>): Luog
 
 export async function fetchLuoguContests(ctx: Context, config: Config): Promise<Contest[]> {
   const currentTime = Math.floor(Date.now() / 1000)
-  const data = await ctx.http.get('https://www.luogu.com.cn/contest/list?page=1&_contentOnly=1')
-  return extractLuoguContestEntries(data)
+  const data = await ctx.http.get(SOURCE_URL)
+  const entries = extractLuoguContestEntries(data)
+  const contests = entries
     .filter((contest) => shouldIncludeContest(contest.startTime, contest.endTime, currentTime, config.contestWindowDays))
     .map((contest) => ({
       oj: 'Luogu',
@@ -38,4 +42,18 @@ export async function fetchLuoguContests(ctx: Context, config: Config): Promise<
       startTime: contest.startTime,
       duration: contest.endTime - contest.startTime,
     }))
+  logInfo(
+    ctx,
+    config,
+    `[Luogu] 获取完成：原始 ${entries.length} 条，过滤后 ${contests.length} 条。`,
+    `[Luogu] 请求地址：${SOURCE_URL}`,
+  )
+  await writePlatformResponseLog(ctx, config, {
+    platform: 'Luogu',
+    sourceUrl: SOURCE_URL,
+    rawResponse: data,
+    rawCount: entries.length,
+    normalizedContests: contests,
+  })
+  return contests
 }

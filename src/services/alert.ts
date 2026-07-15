@@ -5,6 +5,7 @@ import { getContests } from './contest'
 import { formatContestListText, formatContestText } from './format'
 import { sendToAlertTargets } from './bot'
 import { shouldScheduleBeforeAlert } from '../utils/filter'
+import { logInfo } from '../utils/logger'
 
 type TimerHandle = () => void
 
@@ -29,11 +30,15 @@ export function registerAlerts(ctx: Context, config: Config) {
 
   function scheduleCronAlert() {
     if (!ctx.cron) {
-      ctx.logger.warn('not-just-cf alert cron service not found. Please enable koishi-plugin-cron.')
+      logInfo(ctx, config, '[WARN] 未找到 cron 服务，定时比赛提醒不会启动。')
       return
     }
     addDisposer(ctx.cron(config.alertCronExpression, sendDailyAlert))
-    ctx.logger.info(`not-just-cf cron alert scheduled: ${config.alertCronExpression}`)
+    logInfo(
+      ctx,
+      config,
+      `[提醒] Cron 定时比赛提醒已启动：${config.alertCronExpression}。`,
+    )
   }
 
   async function refreshBeforeContestAlerts() {

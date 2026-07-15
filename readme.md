@@ -11,6 +11,16 @@
 - 实验性功能：比赛前30分钟提醒群友
 - 可配置获取未来几天内的比赛，设置为 `0` 时返回所有未来比赛
 
+## 图片输出预览
+
+### Puppeteer HTML/CSS 模式（`puppeteer_image`）
+
+![Puppeteer HTML/CSS 比赛日程预览](docs/images/preview/preview.pptr.png)
+
+### Takumi WASM 模式（`image`）
+
+![Takumi WASM 比赛日程预览](docs/images/preview/preview.takumi.png)
+
 ## 感谢
 
 感谢 [FaulknerWu](https://github.com/FaulknerWu) 贡献的比赛爬虫代码

@@ -34,7 +34,7 @@ export function registerListCommand(ctx: Context, config: Config) {
           ? (await session.send(`${config.enableQuote ? h.quote(session.messageId) : ''}正在生成 ${oj} 比赛图片...`))[0]
           : null
         try {
-          const fontPath = await resolveRenderFont(ctx, config.imageFontPath)
+          const fontPath = await resolveRenderFont(ctx, config, config.imageFontPath)
           const image = await renderContestImage(contests, {
             width: config.imageWidth,
             darkMode: config.imageDarkMode,

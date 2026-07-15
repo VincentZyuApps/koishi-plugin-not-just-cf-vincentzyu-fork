@@ -2,6 +2,7 @@ import { Schema } from 'koishi'
 import { OJ_LIST, OJ_SCHEMA } from './constants/oj'
 import type { AlertTarget, OjName, OutputFormat } from './types'
 import { stringifyCompact, DEFAULT_KEYBOARD_ROWS } from './qq'
+import { DEFAULT_VERBOSE_FILE_LOG_DIR } from './utils/logger'
 
 export const OUTPUT_FORMAT = {
   TEXT: 'text',
@@ -45,6 +46,7 @@ export interface Config {
 
   // ===== 调试配置 =====
   verboseConsoleLog: boolean
+  verboseFileLog: boolean
 }
 
 export const Config: Schema<Config> = Schema.intersect([
@@ -160,5 +162,9 @@ export const Config: Schema<Config> = Schema.intersect([
   // ===== 调试配置 =====
   Schema.object({
     verboseConsoleLog: Schema.boolean().default(false).description('🐛 输出详细调试日志'),
+    verboseFileLog: Schema
+      .boolean()
+      .default(false)
+      .description(`📁 将各比赛平台最后一次完整响应写入 <code>${DEFAULT_VERBOSE_FILE_LOG_DIR}</code>；控制台仅输出摘要`),
   }).description('🐛 调试配置'),
 ])

@@ -28,7 +28,7 @@ export async function renderContestImage(contests: Contest[], options: RenderOpt
   const title = options.title || '算法比赛日程'
   const generatedAt = options.generatedAt || Math.floor(Date.now() / 1000)
   const subtitle = options.subtitle || `生成时间：${formatDateTime(generatedAt)} ｜ Asia/Shanghai`
-  const height = calcHeight(contests.length)
+  const height = calcHeight(contests, width)
 
   const root = container({
     style: {

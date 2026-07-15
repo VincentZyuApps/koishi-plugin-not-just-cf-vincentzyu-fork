@@ -3,6 +3,8 @@ import { existsSync } from 'fs'
 import { mkdir, readFile, writeFile } from 'fs/promises'
 import path from 'path'
 import type { Context } from 'koishi'
+import type { Config } from '../config'
+import { logInfo } from './logger'
 
 export const LXGW_WENKAI_FILE_NAME = 'LXGWWenKaiMono-Regular.ttf'
 
@@ -45,11 +47,11 @@ async function verifyFile(filePath: string): Promise<boolean> {
   }
 }
 
-async function downloadLxgwFont(ctx: Context, filePath: string): Promise<void> {
+async function downloadLxgwFont(ctx: Context, config: Config, filePath: string): Promise<void> {
   let lastError: unknown
   for (const source of DOWNLOAD_SOURCES) {
     try {
-      ctx.logger.info(`开始从 ${source.name} 下载字体 ${LXGW_WENKAI_FILE_NAME}。`)
+      logInfo(ctx, config, `[字体] 开始从 ${source.name} 下载 ${LXGW_WENKAI_FILE_NAME}。`)
       const response = await ctx.http.get(source.url, {
         responseType: 'arraybuffer',
         timeout: 60000,
@@ -58,17 +60,22 @@ async function downloadLxgwFont(ctx: Context, filePath: string): Promise<void> {
       if (!verifyBuffer(buffer)) throw new Error('字体大小或 hash 校验失败')
       await writeFile(filePath, buffer)
       if (!(await verifyFile(filePath))) throw new Error('字体写入后校验失败')
-      ctx.logger.info(`字体 ${LXGW_WENKAI_FILE_NAME} 已从 ${source.name} 下载并通过校验。`)
+      logInfo(ctx, config, `[字体] ${LXGW_WENKAI_FILE_NAME} 已从 ${source.name} 下载并通过校验。`)
       return
     } catch (error) {
       lastError = error
-      ctx.logger.warn(`${source.name} 字体下载失败：${error instanceof Error ? error.message : error}`)
+      logInfo(
+        ctx,
+        config,
+        `[WARN] ${source.name} 字体下载失败，将尝试下一个来源。`,
+        `[WARN] ${error instanceof Error ? error.stack || error.message : error}`,
+      )
     }
   }
   throw new Error(`LXGW 字体下载失败，Gitee 和 GitHub 均不可用：${lastError instanceof Error ? lastError.message : lastError}`)
 }
 
-export async function ensureLxgwFont(ctx: Context): Promise<string> {
+export async function ensureLxgwFont(ctx: Context, config: Config): Promise<string> {
   const filePath = getLxgwFontPath(ctx)
   if (readyPaths.has(filePath)) return filePath
 
@@ -78,13 +85,18 @@ export async function ensureLxgwFont(ctx: Context): Promise<string> {
   const check = (async () => {
     if (await verifyFile(filePath)) {
       readyPaths.add(filePath)
-      ctx.logger.debug(`字体 ${LXGW_WENKAI_FILE_NAME} 已存在且校验通过。`)
+      logInfo(
+        ctx,
+        config,
+        `[字体] ${LXGW_WENKAI_FILE_NAME} 已存在且校验通过。`,
+        `[字体] 文件路径：${filePath}`,
+      )
       return filePath
     }
 
-    if (existsSync(filePath)) ctx.logger.warn(`字体 ${LXGW_WENKAI_FILE_NAME} 校验失败，将重新下载。`)
+    if (existsSync(filePath)) logInfo(ctx, config, `[WARN] 字体 ${LXGW_WENKAI_FILE_NAME} 校验失败，将重新下载。`)
     await mkdir(path.dirname(filePath), { recursive: true })
-    await downloadLxgwFont(ctx, filePath)
+    await downloadLxgwFont(ctx, config, filePath)
     readyPaths.add(filePath)
     return filePath
   })().finally(() => pendingChecks.delete(filePath))
@@ -93,10 +105,15 @@ export async function ensureLxgwFont(ctx: Context): Promise<string> {
   return check
 }
 
-export async function resolveRenderFont(ctx: Context, configuredPath?: string): Promise<string> {
+export async function resolveRenderFont(ctx: Context, config: Config, configuredPath?: string): Promise<string> {
   if (configuredPath) {
     if (existsSync(configuredPath)) return configuredPath
-    ctx.logger.warn(`配置的字体文件不存在，将使用自动管理的 LXGW 字体：${configuredPath}`)
+    logInfo(
+      ctx,
+      config,
+      '[WARN] 配置的字体文件不存在，将使用自动管理的 LXGW 字体。',
+      `[WARN] 无效字体路径：${configuredPath}`,
+    )
   }
-  return ensureLxgwFont(ctx)
+  return ensureLxgwFont(ctx, config)
 }

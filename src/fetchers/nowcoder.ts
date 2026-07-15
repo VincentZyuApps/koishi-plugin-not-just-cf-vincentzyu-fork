@@ -3,6 +3,9 @@ import type { Context } from 'koishi'
 import type { Config } from '../config'
 import type { Contest } from '../types'
 import { shouldIncludeContest } from '../utils/filter'
+import { logInfo, writePlatformResponseLog } from '../utils/logger'
+
+const SOURCE_URL = 'https://ac.nowcoder.com/acm/contest/vip-index?topCategoryFilter=13'
 
 function parseNowCoderTime(text: string): { startTime: number; duration: number } | null {
   const normalized = text.replace(/\s+/g, ' ').trim()
@@ -20,11 +23,12 @@ function parseNowCoderTime(text: string): { startTime: number; duration: number 
 }
 export async function fetchNowCoderContests(ctx: Context, config: Config): Promise<Contest[]> {
   const currentTime = Math.floor(Date.now() / 1000)
-  const response = await ctx.http.get('https://ac.nowcoder.com/acm/contest/vip-index?topCategoryFilter=13')
+  const response = await ctx.http.get(SOURCE_URL)
   const $ = cheerio.load(response)
   const contests: Contest[] = []
+  const entries = $('.nk-main .platform-mod').eq(0).find('.platform-item-main')
 
-  $('.nk-main .platform-mod').eq(0).find('.platform-item-main').each((_, element) => {
+  entries.each((_, element) => {
     const name = $(element).find('h4 a').text().trim()
     const contestTime = $(element).find('.match-time-icon').text()
     const parsed = parseNowCoderTime(contestTime)
@@ -40,5 +44,18 @@ export async function fetchNowCoderContests(ctx: Context, config: Config): Promi
     }
   })
 
+  logInfo(
+    ctx,
+    config,
+    `[NowCoder] 获取完成：原始 ${entries.length} 条，过滤后 ${contests.length} 条。`,
+    `[NowCoder] 请求地址：${SOURCE_URL}`,
+  )
+  await writePlatformResponseLog(ctx, config, {
+    platform: 'NowCoder',
+    sourceUrl: SOURCE_URL,
+    rawResponse: response,
+    rawCount: entries.length,
+    normalizedContests: contests,
+  })
   return contests
 }

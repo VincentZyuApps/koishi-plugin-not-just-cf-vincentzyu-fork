@@ -5,7 +5,9 @@ import { extname, join } from 'path'
 import { pathToFileURL } from 'url'
 import type { Context } from 'koishi'
 import type {} from 'koishi-plugin-puppeteer'
+import type { Config } from '../config'
 import type { Contest, RenderOptions } from '../types'
+import { logInfo } from '../utils/logger'
 import { formatDateTime, formatDuration, formatTimeUntil } from '../utils/time'
 import { ojColors } from './theme'
 
@@ -69,7 +71,7 @@ function renderContestCard(contest: Contest): string {
       <div class="contest-main">
         <div class="contest-meta">
           <span class="oj-name">${escapeHtml(contest.oj)}</span>
-          <span class="countdown">${escapeHtml(formatTimeUntil(contest.startTime))}后开始</span>
+          <span class="countdown">T-${escapeHtml(formatTimeUntil(contest.startTime))}</span>
         </div>
         <div class="contest-name">${escapeHtml(contest.name)}</div>
       </div>
@@ -81,17 +83,49 @@ function renderContestCard(contest: Contest): string {
 }
 
 function renderGroups(contests: Contest[]): string {
-  if (!contests.length) {
-    return '<div class="empty-state"><strong>近期暂无比赛</strong><span>可以稍后再来看看</span></div>'
-  }
   return groupContests(contests).map((group) => `
     <section class="date-group">
       <header class="date-heading">
-        <strong>${escapeHtml(group.date)}</strong>
-        <span>${escapeHtml(group.label)} · ${group.contests.length} 场</span>
+        <div><span class="date-marker"></span><strong>${escapeHtml(group.date)}</strong></div>
+        <span>${escapeHtml(group.label)} / ${group.contests.length} 场</span>
       </header>
       <div class="contest-list">${group.contests.map(renderContestCard).join('')}</div>
     </section>`).join('')
+}
+
+function renderSpotlight(contest: Contest): string {
+  const color = ojColors[contest.oj] || '#667085'
+  return `
+    <section class="spotlight" style="--oj-color: ${color}">
+      <div class="spotlight-copy">
+        <div class="section-label"><span>NEXT UP</span><i></i><b>${escapeHtml(contest.oj)}</b></div>
+        <h2>${escapeHtml(contest.name)}</h2>
+        <div class="spotlight-meta">
+          <span><small>开始时间</small>${escapeHtml(formatDateTime(contest.startTime))}</span>
+          <span><small>预计时长</small>${escapeHtml(formatDuration(contest.duration))}</span>
+        </div>
+      </div>
+      <div class="spotlight-countdown">
+        <small>距离开赛</small>
+        <strong>${escapeHtml(formatTimeUntil(contest.startTime))}</strong>
+        <span>Asia/Shanghai</span>
+      </div>
+    </section>`
+}
+
+function renderPlatformDistribution(contests: Contest[]): string {
+  const counts = new Map<string, number>()
+  for (const contest of contests) counts.set(contest.oj, (counts.get(contest.oj) || 0) + 1)
+  const max = Math.max(1, ...counts.values())
+  return Array.from(counts, ([platform, count]) => {
+    const color = ojColors[platform] || '#667085'
+    const width = Math.max(8, Math.round(count / max * 100))
+    return `
+      <div class="platform-row">
+        <div class="platform-row-label"><span><i style="background:${color}"></i>${escapeHtml(platform)}</span><strong>${count}</strong></div>
+        <div class="platform-track"><b style="width:${width}%;background:${color}"></b></div>
+      </div>`
+  }).join('')
 }
 
 export function buildContestHtml(contests: Contest[], options: RenderOptions): string {
@@ -100,12 +134,14 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
   const title = options.title || '算法比赛日程'
   const generatedAt = options.generatedAt || Math.floor(Date.now() / 1000)
   const platforms = Array.from(new Set(contests.map((contest) => contest.oj)))
-  const nearest = contests[0] ? formatTimeUntil(contests[0].startTime) : '--'
+  const dates = Array.from(new Set(contests.map((contest) => getDateKey(contest.startTime))))
   const fontFace = getFontFace(options.fontPath)
-  const platformBadges = platforms.map((platform) => {
-    const color = ojColors[platform] || '#667085'
-    return `<span class="platform-badge"><i style="background:${color}"></i>${escapeHtml(platform)}</span>`
-  }).join('')
+  const showSpotlight = contests.length > 0 && contests.length <= 8
+  const scheduleContests = showSpotlight ? contests.slice(1) : contests
+  const density = contests.length <= 3 ? 'focus' : contests.length <= 8 ? 'balanced' : 'compact'
+  const c = dark
+    ? { bg: '#12161c', surface: '#1b2028', surfaceAlt: '#202631', line: '#343b47', text: '#f4f6f8', muted: '#98a3b3', faint: '#6f7b8c', accent: '#75b8ff' }
+    : { bg: '#edf0f4', surface: '#ffffff', surfaceAlt: '#f7f8fa', line: '#d2d7df', text: '#18202c', muted: '#667085', faint: '#8b95a5', accent: '#1769aa' }
 
   return `<!doctype html>
 <html lang="zh-CN">
@@ -125,86 +161,143 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
     #contest-poster {
       width: ${width}px;
       padding: 28px;
-      color: ${dark ? '#f5f7fa' : '#17202d'};
-      background: ${dark ? '#161a20' : '#f2f4f7'};
+      color: ${c.text};
+      background: ${c.bg};
     }
     .masthead {
       display: flex;
-      align-items: flex-end;
+      align-items: center;
       justify-content: space-between;
       gap: 24px;
-      padding: 4px 2px 22px;
-      border-bottom: 2px solid ${dark ? '#343a46' : '#d6dae1'};
+      padding: 2px 2px 20px;
+      border-bottom: 1px solid ${c.line};
     }
-    .eyebrow { margin-bottom: 7px; color: ${dark ? '#99a3b3' : '#667085'}; font-size: 14px; font-weight: 700; }
-    h1 { margin: 0; font-size: 36px; line-height: 1.2; font-weight: 900; }
-    .generated { flex: none; color: ${dark ? '#99a3b3' : '#667085'}; font-size: 13px; text-align: right; }
-    .summary {
+    .brand-line { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; color: ${c.accent}; font-size: 12px; font-weight: 900; }
+    .brand-line i { width: 22px; height: 2px; background: ${c.accent}; }
+    h1 { margin: 0; font-size: 34px; line-height: 1.2; font-weight: 900; }
+    .sync-state { flex: none; text-align: right; }
+    .sync-state strong { display: flex; align-items: center; justify-content: flex-end; gap: 7px; margin-bottom: 5px; color: ${c.text}; font-size: 13px; }
+    .sync-state strong i { width: 8px; height: 8px; border-radius: 50%; background: #35c48d; }
+    .sync-state span { color: ${c.muted}; font-size: 12px; }
+    .overview {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      border-bottom: 1px solid ${dark ? '#343a46' : '#d6dae1'};
+      grid-template-columns: minmax(0, 1.45fr) minmax(260px, .75fr);
+      border-bottom: 1px solid ${c.line};
     }
-    .summary-item { padding: 18px 16px 16px; border-right: 1px solid ${dark ? '#343a46' : '#d6dae1'}; }
-    .summary-item:first-child { padding-left: 2px; }
-    .summary-item:last-child { border-right: 0; }
-    .summary-item span { display: block; margin-bottom: 4px; color: ${dark ? '#99a3b3' : '#667085'}; font-size: 13px; font-weight: 700; }
-    .summary-item strong { font-size: 24px; line-height: 1.2; }
-    .platforms { display: flex; flex-wrap: wrap; gap: 8px 14px; padding: 16px 2px 8px; }
-    .platform-badge { display: inline-flex; align-items: center; gap: 7px; color: ${dark ? '#cbd2dc' : '#475467'}; font-size: 13px; font-weight: 700; }
-    .platform-badge i { width: 8px; height: 8px; border-radius: 50%; }
-    .date-group { margin-top: 20px; }
-    .date-heading { display: flex; align-items: baseline; justify-content: space-between; padding: 0 2px 9px; }
-    .date-heading strong { font-size: 19px; }
-    .date-heading span { color: ${dark ? '#99a3b3' : '#667085'}; font-size: 13px; font-weight: 700; }
+    .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-right: 1px solid ${c.line}; }
+    .metric { min-height: 86px; padding: 17px 18px; border-right: 1px solid ${c.line}; border-bottom: 1px solid ${c.line}; }
+    .metric:nth-child(2n) { border-right: 0; }
+    .metric:nth-last-child(-n+2) { border-bottom: 0; }
+    .metric span { display: block; margin-bottom: 6px; color: ${c.muted}; font-size: 12px; font-weight: 700; }
+    .metric strong { font-size: 27px; line-height: 1; }
+    .metric small { margin-left: 5px; color: ${c.faint}; font-size: 11px; font-weight: 700; }
+    .platform-panel { padding: 16px 18px; }
+    .panel-title { margin-bottom: 13px; color: ${c.muted}; font-size: 12px; font-weight: 800; }
+    .platform-row { margin-top: 10px; }
+    .platform-row-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
+    .platform-row-label span { display: flex; align-items: center; gap: 7px; color: ${c.muted}; font-weight: 700; }
+    .platform-row-label i { width: 7px; height: 7px; border-radius: 50%; }
+    .platform-row-label strong { font-size: 12px; }
+    .platform-track { height: 3px; overflow: hidden; background: ${c.line}; }
+    .platform-track b { display: block; height: 100%; }
+    .spotlight {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 210px;
+      margin-top: 22px;
+      overflow: hidden;
+      border: 1px solid ${c.line};
+      border-left: 6px solid var(--oj-color);
+      border-radius: 8px;
+      background: ${c.surface};
+    }
+    .spotlight-copy { min-width: 0; padding: 22px 24px; }
+    .section-label { display: flex; align-items: center; gap: 9px; color: ${c.muted}; font-size: 11px; font-weight: 900; }
+    .section-label i { width: 28px; height: 1px; background: ${c.line}; }
+    .section-label b { color: var(--oj-color); }
+    .spotlight h2 { margin: 12px 0 17px; overflow-wrap: anywhere; font-size: 27px; line-height: 1.32; }
+    .spotlight-meta { display: flex; gap: 30px; color: ${c.text}; font-size: 13px; font-weight: 800; }
+    .spotlight-meta span { display: flex; flex-direction: column; gap: 4px; }
+    .spotlight-meta small { color: ${c.muted}; font-size: 10px; font-weight: 700; }
+    .spotlight-countdown { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; padding: 20px 22px; border-left: 1px solid ${c.line}; background: ${c.surfaceAlt}; }
+    .spotlight-countdown small { color: ${c.muted}; font-size: 11px; font-weight: 800; }
+    .spotlight-countdown strong { margin: 7px 0; color: var(--oj-color); font-size: 29px; line-height: 1.1; text-align: right; }
+    .spotlight-countdown span { color: ${c.faint}; font-size: 10px; }
+    .schedule-section { margin-top: 24px; }
+    .schedule-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 13px; padding: 0 2px; }
+    .schedule-header div span { display: block; margin-bottom: 4px; color: ${c.accent}; font-size: 10px; font-weight: 900; }
+    .schedule-header h3 { margin: 0; font-size: 21px; }
+    .schedule-header > span { color: ${c.muted}; font-size: 11px; font-weight: 700; }
+    .date-grid { display: grid; gap: 20px 18px; }
+    .date-grid.focus { grid-template-columns: 1fr; }
+    .date-grid.balanced, .date-grid.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .date-group:only-child { grid-column: 1 / -1; }
+    .date-heading { display: flex; align-items: baseline; justify-content: space-between; padding: 0 2px 9px; border-bottom: 1px solid ${c.line}; }
+    .date-heading div { display: flex; align-items: center; gap: 8px; }
+    .date-marker { width: 3px; height: 15px; background: ${c.accent}; }
+    .date-heading strong { font-size: 17px; }
+    .date-heading > span { color: ${c.muted}; font-size: 11px; font-weight: 700; }
     .contest-list { display: flex; flex-direction: column; gap: 8px; }
     .contest-card {
       position: relative;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 124px;
-      min-height: 104px;
+      grid-template-columns: minmax(0, 1fr) 108px;
+      min-height: 96px;
       overflow: hidden;
-      border: 1px solid ${dark ? '#343a46' : '#d6dae1'};
-      border-radius: 8px;
-      background: ${dark ? '#222730' : '#ffffff'};
+      border-bottom: 1px solid ${c.line};
+      background: ${c.surface};
     }
-    .contest-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--oj-color); }
-    .contest-main { min-width: 0; padding: 16px 18px 15px 21px; }
-    .contest-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-    .oj-name { color: var(--oj-color); font-size: 14px; font-weight: 900; }
-    .countdown { color: ${dark ? '#99a3b3' : '#667085'}; font-size: 12px; font-weight: 700; }
-    .contest-name { overflow-wrap: anywhere; font-size: 19px; line-height: 1.38; font-weight: 800; }
+    .contest-card::before { content: ""; position: absolute; inset: 16px auto 16px 0; width: 3px; background: var(--oj-color); }
+    .contest-main { min-width: 0; padding: 14px 15px 13px 14px; }
+    .contest-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+    .oj-name { color: var(--oj-color); font-size: 12px; font-weight: 900; }
+    .countdown { color: ${c.muted}; font-size: 10px; font-weight: 700; }
+    .contest-name { overflow-wrap: anywhere; font-size: 16px; line-height: 1.38; font-weight: 800; }
     .contest-time {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
       justify-content: center;
       gap: 5px;
-      padding: 15px 17px;
-      border-left: 1px solid ${dark ? '#343a46' : '#e2e5ea'};
-      background: ${dark ? '#1d222a' : '#f8f9fb'};
+      padding: 13px 14px;
+      border-left: 1px solid ${c.line};
+      background: ${c.surfaceAlt};
     }
-    .contest-time strong { font-size: 25px; }
-    .contest-time span { color: ${dark ? '#99a3b3' : '#667085'}; font-size: 12px; font-weight: 700; }
-    .empty-state { display: flex; flex-direction: column; align-items: center; gap: 7px; margin-top: 20px; padding: 52px 20px; border: 1px solid ${dark ? '#343a46' : '#d6dae1'}; border-radius: 8px; background: ${dark ? '#222730' : '#ffffff'}; }
+    .contest-time strong { font-size: 21px; }
+    .contest-time span { color: ${c.muted}; font-size: 10px; font-weight: 700; }
+    .date-grid.compact .contest-card { min-height: 82px; }
+    .date-grid.compact .contest-main { padding-top: 11px; padding-bottom: 10px; }
+    .date-grid.compact .contest-name { font-size: 14px; }
+    .date-grid.compact .contest-time strong { font-size: 18px; }
+    .empty-state { display: flex; flex-direction: column; align-items: center; gap: 7px; margin-top: 20px; padding: 52px 20px; border: 1px solid ${c.line}; border-radius: 8px; background: ${c.surface}; }
     .empty-state strong { font-size: 22px; }
-    .empty-state span { color: ${dark ? '#99a3b3' : '#667085'}; font-size: 14px; }
-    .footer { display: flex; justify-content: space-between; margin-top: 22px; padding: 12px 2px 2px; border-top: 1px solid ${dark ? '#343a46' : '#d6dae1'}; color: ${dark ? '#7f8998' : '#7a8494'}; font-size: 12px; font-weight: 700; }
+    .empty-state span { color: ${c.muted}; font-size: 14px; }
+    .footer { display: flex; justify-content: space-between; margin-top: 24px; padding: 13px 2px 2px; border-top: 1px solid ${c.line}; color: ${c.faint}; font-size: 10px; font-weight: 700; }
   </style>
 </head>
 <body>
   <main id="contest-poster">
     <header class="masthead">
-      <div><div class="eyebrow">CONTEST CALENDAR</div><h1>${escapeHtml(title)}</h1></div>
-      <div class="generated">Asia/Shanghai<br>${escapeHtml(formatDateTime(generatedAt))}</div>
+      <div><div class="brand-line"><i></i>CONTEST OPERATIONS</div><h1>${escapeHtml(title)}</h1></div>
+      <div class="sync-state"><strong><i></i>数据已同步</strong><span>${escapeHtml(formatDateTime(generatedAt))}<br>Asia/Shanghai</span></div>
     </header>
-    <section class="summary">
-      <div class="summary-item"><span>比赛总数</span><strong>${contests.length}</strong></div>
-      <div class="summary-item"><span>覆盖平台</span><strong>${platforms.length}</strong></div>
-      <div class="summary-item"><span>最近开赛</span><strong>${escapeHtml(nearest)}</strong></div>
+    <section class="overview">
+      <div class="metrics">
+        <div class="metric"><span>监控赛事</span><strong>${contests.length}</strong><small>场</small></div>
+        <div class="metric"><span>覆盖平台</span><strong>${platforms.length}</strong><small>个</small></div>
+        <div class="metric"><span>日程跨度</span><strong>${dates.length}</strong><small>天</small></div>
+        <div class="metric"><span>下一场</span><strong>${contests[0] ? escapeHtml(formatTimeUntil(contests[0].startTime)) : '--'}</strong></div>
+      </div>
+      <div class="platform-panel"><div class="panel-title">平台赛事分布</div>${renderPlatformDistribution(contests)}</div>
     </section>
-    ${platformBadges ? `<div class="platforms">${platformBadges}</div>` : ''}
-    ${renderGroups(contests)}
-    <footer class="footer"><span>not-just-cf</span><span>Puppeteer HTML renderer</span></footer>
+    ${showSpotlight ? renderSpotlight(contests[0]) : ''}
+    ${!contests.length ? '<div class="empty-state"><strong>近期暂无比赛</strong><span>监控窗口内没有即将开始或正在进行的赛事</span></div>' : ''}
+    ${scheduleContests.length ? `
+      <section class="schedule-section">
+        <header class="schedule-header"><div><span>UPCOMING SCHEDULE</span><h3>${showSpotlight ? '后续赛程' : '全部赛程'}</h3></div><span>${scheduleContests.length} 场待跟进赛事</span></header>
+        <div class="date-grid ${density}">${renderGroups(scheduleContests)}</div>
+      </section>` : ''}
+    <footer class="footer"><span>NOT-JUST-CF / OPERATIONS BOARD</span><span>Puppeteer HTML renderer · ${escapeHtml(String(width))}px</span></footer>
   </main>
 </body>
 </html>`
@@ -236,6 +329,7 @@ export async function renderContestPuppeteerImage(
   ctx: Context,
   contests: Contest[],
   options: RenderOptions,
+  config: Config,
 ): Promise<Buffer> {
   if (!ctx.puppeteer) {
     throw new Error('Puppeteer 服务未启用，请安装并启用 koishi-plugin-puppeteer。')
@@ -249,26 +343,45 @@ export async function renderContestPuppeteerImage(
   let page: Awaited<ReturnType<typeof ctx.puppeteer.page>> | undefined
   try {
     page = await ctx.puppeteer.page()
-    page.on('console', (message) => ctx.logger.debug(`Puppeteer console: ${message.text()}`))
-    page.on('pageerror', (error) => ctx.logger.error(`Puppeteer page error: ${error.message}`))
+    if (config.verboseConsoleLog) {
+      page.on('console', (message) => logInfo(ctx, config, `[Puppeteer Console] ${message.text()}`))
+    }
+    page.on('pageerror', (error) => logInfo(
+      ctx,
+      config,
+      '[ERROR] Puppeteer 页面执行异常。',
+      `[ERROR] ${error.stack || error.message}`,
+    ))
     await page.setViewport({ width, height: 1000, deviceScaleFactor: 1 })
-    ctx.logger.debug('Puppeteer 比赛日程：开始加载本地 HTML。')
+    const renderStart = Date.now()
+    logInfo(
+      ctx,
+      config,
+      `[Puppeteer] 开始渲染 ${contests.length} 场比赛。`,
+      `[Puppeteer] 临时 HTML：${htmlPath}`,
+    )
     await page.goto(pathToFileURL(htmlPath).href, { waitUntil: 'load', timeout: 15000 })
-    ctx.logger.debug('Puppeteer 比赛日程：本地 HTML 加载完成。')
     await page.waitForSelector('#contest-poster', { timeout: 5000 })
-    ctx.logger.debug('Puppeteer 比赛日程：开始等待字体和布局稳定。')
     await waitForStableLayout(page, '#contest-poster')
-    ctx.logger.debug('Puppeteer 比赛日程：字体和布局已稳定。')
     const element = await page.$('#contest-poster')
     if (!element) throw new Error('找不到比赛日程渲染容器 #contest-poster。')
-    ctx.logger.debug('Puppeteer 比赛日程：开始截图。')
     const screenshot = await element.screenshot({ type: 'png' })
-    ctx.logger.debug('Puppeteer 比赛日程：截图完成。')
+    logInfo(
+      ctx,
+      config,
+      `[Puppeteer] 比赛日程渲染完成，耗时 ${Date.now() - renderStart}ms。`,
+      `[Puppeteer] PNG 大小：${screenshot.length} bytes。`,
+    )
     return Buffer.from(screenshot)
   } finally {
     if (page) await page.close()
     await unlink(htmlPath).catch((error) => {
-      ctx.logger.debug(`删除 Puppeteer 临时 HTML 失败：${error instanceof Error ? error.message : error}`)
+      logInfo(
+        ctx,
+        config,
+        '[WARN] 删除 Puppeteer 临时 HTML 失败。',
+        `[WARN] 路径：${htmlPath}\n${error instanceof Error ? error.stack || error.message : error}`,
+      )
     })
   }
 }

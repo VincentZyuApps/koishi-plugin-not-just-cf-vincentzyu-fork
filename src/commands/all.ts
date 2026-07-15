@@ -27,7 +27,7 @@ export function registerAllCommand(ctx: Context, config: Config) {
           ? (await session.send(`${config.enableQuote ? h.quote(session.messageId) : ''}正在生成比赛日程图片...`))[0]
           : null
         try {
-          const fontPath = await resolveRenderFont(ctx, config.imageFontPath)
+          const fontPath = await resolveRenderFont(ctx, config, config.imageFontPath)
           const image = await renderContestImage(contests, {
             width: config.imageWidth,
             darkMode: config.imageDarkMode,

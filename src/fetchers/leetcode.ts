@@ -3,10 +3,13 @@ import type { Context } from 'koishi'
 import type { Config } from '../config'
 import type { Contest } from '../types'
 import { shouldIncludeContest } from '../utils/filter'
+import { logInfo, writePlatformResponseLog } from '../utils/logger'
 
-export async function fetchLeetCodeContests(_ctx: Context, config: Config): Promise<Contest[]> {
+const SOURCE_URL = 'https://leetcode.com/graphql'
+
+export async function fetchLeetCodeContests(ctx: Context, config: Config): Promise<Contest[]> {
   const currentTime = Math.floor(Date.now() / 1000)
-  const response = await axios.post('https://leetcode.com/graphql', {
+  const response = await axios.post(SOURCE_URL, {
     operationName: null,
     variables: {},
     query: `{
@@ -25,9 +28,19 @@ export async function fetchLeetCodeContests(_ctx: Context, config: Config): Prom
   })
 
   const contests = response.data?.data?.allContests
-  if (!Array.isArray(contests)) return []
+  if (!Array.isArray(contests)) {
+    logInfo(ctx, config, '[LeetCode] 获取完成：响应中没有比赛列表。', `[LeetCode] 请求地址：${SOURCE_URL}`)
+    await writePlatformResponseLog(ctx, config, {
+      platform: 'LeetCode',
+      sourceUrl: SOURCE_URL,
+      rawResponse: response.data,
+      rawCount: 0,
+      normalizedContests: [],
+    })
+    return []
+  }
 
-  return contests
+  const normalized = contests
     .filter((contest: any) => {
       const start = Number(contest.startTime)
       const duration = Number(contest.duration)
@@ -39,4 +52,18 @@ export async function fetchLeetCodeContests(_ctx: Context, config: Config): Prom
       startTime: Number(contest.startTime),
       duration: Number(contest.duration),
     }))
+  logInfo(
+    ctx,
+    config,
+    `[LeetCode] 获取完成：原始 ${contests.length} 条，过滤后 ${normalized.length} 条。`,
+    `[LeetCode] 请求地址：${SOURCE_URL}`,
+  )
+  await writePlatformResponseLog(ctx, config, {
+    platform: 'LeetCode',
+    sourceUrl: SOURCE_URL,
+    rawResponse: response.data,
+    rawCount: contests.length,
+    normalizedContests: normalized,
+  })
+  return normalized
 }

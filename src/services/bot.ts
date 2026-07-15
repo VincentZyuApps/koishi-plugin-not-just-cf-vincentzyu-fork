@@ -1,5 +1,6 @@
 import type { Bot, Context } from 'koishi'
 import type { Config } from '../config'
+import { logInfo } from '../utils/logger'
 import type { AlertTarget } from '../types'
 
 export function resolveAlertBot(ctx: Context, target: AlertTarget): Bot | null {
@@ -13,7 +14,11 @@ export async function sendToAlertTargets(ctx: Context, config: Config, content: 
     if (!target.enabled || !target.channelId) continue
     const bot = resolveAlertBot(ctx, target)
     if (!bot) {
-      ctx.logger.warn(`not-just-cf alert bot not found: ${target.platform}${target.selfId ? `:${target.selfId}` : ''}`)
+      logInfo(
+        ctx,
+        config,
+        `[WARN] 未找到提醒目标 Bot：${target.platform}${target.selfId ? `:${target.selfId}` : ''}。`,
+      )
       continue
     }
     await bot.sendMessage(target.channelId, content)

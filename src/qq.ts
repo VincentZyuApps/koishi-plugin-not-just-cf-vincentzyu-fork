@@ -3,6 +3,7 @@ import type { Session } from 'koishi'
 import type { Config } from './config'
 import type { Contest } from './types'
 import { formatDateTime, formatDuration, formatTimeUntil } from './utils/time'
+import { logInfo } from './utils/logger'
 
 export interface KeyboardButton {
   render_data: { label: string; style: number }
@@ -107,7 +108,13 @@ export function buildContestKeyboard(config: Config, customJson?: string): objec
   return DEFAULT_KEYBOARD_ROWS
 }
 
-export async function sendQQMarkdown(session: any, markdown: string, keyboard: object, throwOnError = false): Promise<void> {
+export async function sendQQMarkdown(
+  session: any,
+  config: Config,
+  markdown: string,
+  keyboard: object,
+  throwOnError = false,
+): Promise<void> {
   try {
     if (session.bot?.config?.autoStreamText) {
       await session.send(h('qq:rawmarkdown', { content: markdown, keyboard }))
@@ -132,7 +139,12 @@ export async function sendQQMarkdown(session: any, markdown: string, keyboard: o
 
     await session.bot.internal.sendMessage(session.channelId, payload)
   } catch (error) {
-    session.logger?.warn?.('发送 QQ Markdown 失败（不影响主消息）: %s', error)
+    logInfo(
+      session.app,
+      config,
+      '[WARN] QQ Markdown 发送失败，不影响其他输出格式。',
+      `[WARN] ${error instanceof Error ? error.stack || error.message : error}`,
+    )
     if (throwOnError) throw error
   }
 }
@@ -141,10 +153,10 @@ export async function sendContestQQMarkdown(session: Session, config: Config, co
   if (!isQQOfficialSession(session)) return
   const keyboard = buildContestKeyboard(config, config.qqMarkdownKeyboardJson)
   if (config.outputFormats.includes('qqmarkdown_style')) {
-    await sendQQMarkdown(session, buildContestMarkdown(contests, config, title), keyboard)
+    await sendQQMarkdown(session, config, buildContestMarkdown(contests, config, title), keyboard)
   }
   if (config.outputFormats.includes('qqmarkdown_table')) {
-    await sendQQMarkdown(session, buildContestMarkdownTable(contests, config, title), keyboard)
+    await sendQQMarkdown(session, config, buildContestMarkdownTable(contests, config, title), keyboard)
   }
 }
 

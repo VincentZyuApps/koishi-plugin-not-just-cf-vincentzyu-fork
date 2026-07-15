@@ -120,12 +120,25 @@ export function buildContestList(contests: Contest[], t: ContestTheme) {
   })
 }
 
-export function calcHeight(contestCount: number): number {
+function estimateTitleLines(title: string, width: number): number {
+  const availableWidth = Math.max(240, width - 72)
+  const estimatedWidth = Array.from(title).reduce((total, character) => {
+    if (/\s/.test(character)) return total + 7
+    return total + (character.charCodeAt(0) > 0x7f ? 21 : 12)
+  }, 0)
+  return Math.max(1, Math.ceil(estimatedWidth / availableWidth))
+}
+
+export function calcHeight(contests: Contest[], width: number): number {
   const header = 178
   const card = 126
   const gap = 10
   const padding = 40
   const footer = 34
-  if (!contestCount) return padding + header + 16 + 110 + footer
-  return padding + header + 16 + contestCount * card + Math.max(0, contestCount - 1) * gap + footer
+  if (!contests.length) return padding + header + 16 + 110 + footer
+  const cardsHeight = contests.reduce((total, contest) => {
+    const extraLines = estimateTitleLines(contest.name, width) - 1
+    return total + card + extraLines * 28
+  }, 0)
+  return padding + header + 16 + cardsHeight + Math.max(0, contests.length - 1) * gap + footer
 }
