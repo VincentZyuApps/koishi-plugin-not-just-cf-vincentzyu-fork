@@ -92,12 +92,12 @@ function buildTableMarkdown(contests: Contest[], title: string, maxDisplay: numb
 }
 
 export function buildContestMarkdown(contests: Contest[], config: Config, title = '近期算法比赛日程'): string {
-  const maxDisplay = config.qqMarkdownMaxDisplay || 8
+  const maxDisplay = config.qqMarkdownMaxDisplay || 50
   return buildQuoteMarkdown(contests, title, maxDisplay)
 }
 
 export function buildContestMarkdownTable(contests: Contest[], config: Config, title = '近期算法比赛日程'): string {
-  return buildTableMarkdown(contests, title, config.qqMarkdownMaxDisplay || 8)
+  return buildTableMarkdown(contests, title, config.qqMarkdownMaxDisplay || 50)
 }
 
 export function buildContestKeyboard(config: Config, customJson?: string): object {

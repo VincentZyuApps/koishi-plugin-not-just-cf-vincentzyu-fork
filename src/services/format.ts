@@ -13,14 +13,17 @@ export function formatContestText(contest: Contest): string {
   ].join('\n')
 }
 
-export function formatContestListText(contests: Contest[]): string {
+export function formatContestListText(contests: Contest[], totalCount = contests.length): string {
   if (!contests.length) return '📅 近期算法比赛日程\n\n暂无比赛'
-  return [
+  const omittedCount = Math.max(0, totalCount - contests.length)
+  const lines = [
     `📅 近期算法比赛日程`,
-    `📌 共 ${contests.length} 场比赛`,
+    `📌 共 ${totalCount} 场比赛${omittedCount ? `，当前展示前 ${contests.length} 场` : ''}`,
     '',
     contests.map(formatContestText).join(''),
-  ].join('\n')
+  ]
+  if (omittedCount) lines.push(`📎 还有 ${omittedCount} 场比赛未在文字模式中展示`)
+  return lines.join('\n')
 }
 
 export function getContestWindowText(contestWindowDays: number, contestTarget: string): string {

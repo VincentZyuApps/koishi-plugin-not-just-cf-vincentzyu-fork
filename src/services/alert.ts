@@ -25,7 +25,8 @@ export function registerAlerts(ctx: Context, config: Config) {
 
   async function sendDailyAlert() {
     const contests = await getContests(ctx, config)
-    await sendToAlertTargets(ctx, config, formatContestListText(contests))
+    const visibleContests = contests.slice(0, config.textMaxDisplay)
+    await sendToAlertTargets(ctx, config, formatContestListText(visibleContests, contests.length))
   }
 
   function scheduleCronAlert() {

@@ -6,12 +6,14 @@ interface PlatformPresentationConfig {
   label: string
   darkFilter: string
   lightFilter: string
+  logoScale?: number
 }
 
 export interface PlatformPresentation {
   label: string
   logoDataUrl: string | null
   filter: string
+  logoScale: number
 }
 
 const PLATFORM_PRESENTATION: Record<string, PlatformPresentationConfig> = {
@@ -26,6 +28,7 @@ const PLATFORM_PRESENTATION: Record<string, PlatformPresentationConfig> = {
     label: 'NowCoder / 牛客',
     darkFilter: 'brightness(1.1) saturate(1.08)',
     lightFilter: 'contrast(1.06)',
+    logoScale: 1.05,
   },
   LeetCode: {
     fileName: 'logo.LeetCode.png',
@@ -77,5 +80,6 @@ export function getPlatformPresentation(platform: string, darkMode: boolean): Pl
     filter: presentation
       ? (darkMode ? presentation.darkFilter : presentation.lightFilter)
       : 'none',
+    logoScale: presentation?.logoScale ?? 1,
   }
 }

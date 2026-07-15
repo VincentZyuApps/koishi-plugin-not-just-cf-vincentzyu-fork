@@ -2,7 +2,7 @@ import { h, type Context, type Session } from 'koishi'
 import type { Config } from '../config'
 import type { Contest } from '../types'
 import { renderContestPuppeteerImage } from '../templates/puppeteer'
-import { ensureLxgwFont } from '../utils/font'
+import { resolveRenderFont } from '../utils/font'
 import { logInfo } from '../utils/logger'
 
 export async function sendContestPuppeteerImage(
@@ -14,23 +14,25 @@ export async function sendContestPuppeteerImage(
   waitingText: string,
 ) {
   const start = Date.now()
+  const visibleContests = contests.slice(0, config.puppeteerImageMaxDisplay)
   const waiting = config.enableWaitingHint
     ? (await session.send(`${config.enableQuote ? h.quote(session.messageId) : ''}${waitingText}`))[0]
     : null
 
   try {
-    const fontPath = await ensureLxgwFont(ctx, config)
-    const image = await renderContestPuppeteerImage(ctx, contests, {
-      width: config.imageWidth,
-      darkMode: config.imageDarkMode,
+    const fontPath = await resolveRenderFont(ctx, config, config.puppeteerImageFontPath)
+    const image = await renderContestPuppeteerImage(ctx, visibleContests, {
+      width: config.puppeteerImageWidth,
+      darkMode: config.puppeteerImageDarkMode,
       fontPath,
       title,
+      totalContestCount: contests.length,
     }, config)
     const payload = [
       ...(config.enableQuote ? [h.quote(session.messageId)] : []),
       h.image(image, 'image/png'),
     ]
-    if (config.showRenderInfo) payload.push(h.text(`\nPuppeteer 渲染耗时：${Date.now() - start}ms`))
+    if (config.puppeteerShowRenderInfo) payload.push(h.text(`\nPuppeteer 渲染耗时：${Date.now() - start}ms`))
     await session.send(payload)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)

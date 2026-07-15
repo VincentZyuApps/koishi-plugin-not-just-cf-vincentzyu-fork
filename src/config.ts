@@ -6,7 +6,7 @@ import { DEFAULT_VERBOSE_FILE_LOG_DIR } from './utils/logger'
 
 export const OUTPUT_FORMAT = {
   TEXT: 'text',
-  IMAGE: 'image',
+  TAKUMI_IMAGE: 'takumi_image',
   PUPPETEER_IMAGE: 'puppeteer_image',
   QQ_MARKDOWN_STYLE: 'qqmarkdown_style',
   QQ_MARKDOWN_TABLE: 'qqmarkdown_table',
@@ -16,6 +16,7 @@ export interface Config {
   // ===== 消息设置 =====
   enableQuote: boolean
   enableWaitingHint: boolean
+  outputFormats: OutputFormat[]
 
   // ===== 基础命令配置 =====
   commandNameAll: string
@@ -26,12 +27,24 @@ export interface Config {
   contestWindowDays: number
   githubProxy: string
 
-  // ===== 图片输出配置 =====
-  outputFormats: OutputFormat[]
-  imageWidth: number
-  imageDarkMode: boolean
-  imageFontPath: string
-  showRenderInfo: boolean
+  // ===== 文字输出配置 =====
+  textMaxDisplay: number
+
+  // ===== Takumi 图片配置 =====
+  takumiImageMaxDisplay: number
+  takumiImageWidth: number
+  takumiImageDarkMode: boolean
+  takumiImageFontPath: string
+  takumiShowRenderInfo: boolean
+
+  // ===== Puppeteer 图片配置 =====
+  puppeteerImageMaxDisplay: number
+  puppeteerSpotlightMaxContests: number
+  puppeteerImageWidth: number
+  puppeteerDeviceScaleFactor: number
+  puppeteerImageDarkMode: boolean
+  puppeteerImageFontPath: string
+  puppeteerShowRenderInfo: boolean
 
   // ===== 定时提醒配置 =====
   alertEnabled: boolean
@@ -52,6 +65,17 @@ export interface Config {
 export const Config: Schema<Config> = Schema.intersect([
   // ===== 消息设置 =====
   Schema.object({
+    outputFormats: Schema
+      .array(Schema.union([
+        Schema.const(OUTPUT_FORMAT.TEXT).description('📄【text】文字模式：发送带 emoji 的文本比赛列表'),
+        Schema.const(OUTPUT_FORMAT.TAKUMI_IMAGE).description('🖼️【takumi_image】Takumi 图片模式：发送 Takumi WASM 渲染图片'),
+        Schema.const(OUTPUT_FORMAT.PUPPETEER_IMAGE).description('🎨【puppeteer_image】HTML 图片模式：使用 Puppeteer + LXGW 文楷渲染比赛日程'),
+        Schema.const(OUTPUT_FORMAT.QQ_MARKDOWN_STYLE).description('🐧【qqmarkdown_style】QQ Markdown 格式风格：仅支持 QQ 官方 Bot，发送引用块详情 + 按钮'),
+        Schema.const(OUTPUT_FORMAT.QQ_MARKDOWN_TABLE).description('📊【qqmarkdown_table】QQ Markdown 表格风格：仅支持 QQ 官方 Bot，发送 Markdown 表格 + 按钮'),
+      ]))
+      .role('checkbox')
+      .default([OUTPUT_FORMAT.PUPPETEER_IMAGE, OUTPUT_FORMAT.QQ_MARKDOWN_TABLE])
+      .description('📤 选择默认输出格式，可多选并按插件内置顺序发送'),
     enableQuote: Schema
       .boolean()
       .default(true)
@@ -81,8 +105,8 @@ export const Config: Schema<Config> = Schema.intersect([
       .default(OJ_LIST)
       .description('🏁 启用的比赛平台'),
     contestWindowDays: Schema.number()
-      .min(0)
-      .default(3)
+      .min(0).max(365).step(1)
+      .default(30)
       .description('📅 获取未来几天内的比赛，0 表示返回所有未来比赛'),
     githubProxy: Schema.string()
       .role('githubProxy')
@@ -90,37 +114,76 @@ export const Config: Schema<Config> = Schema.intersect([
       .description('🌐 GitHub 代理，为空表示不使用'),
   }).description('🏁 比赛数据配置'),
 
-  // ===== 图片输出配置 =====
+  // ===== 文字输出配置 =====
   Schema.object({
-    outputFormats: Schema
-      .array(Schema.union([
-        Schema.const(OUTPUT_FORMAT.TEXT).description('📄【text】文字模式：发送带 emoji 的文本比赛列表'),
-        Schema.const(OUTPUT_FORMAT.IMAGE).description('🖼️【image】图片模式：发送 Takumi WASM 渲染图片'),
-        Schema.const(OUTPUT_FORMAT.PUPPETEER_IMAGE).description('🎨【puppeteer_image】HTML 图片模式：使用 Puppeteer + LXGW 文楷渲染比赛日程'),
-        Schema.const(OUTPUT_FORMAT.QQ_MARKDOWN_STYLE).description('🐧【qqmarkdown_style】QQ Markdown 格式风格：仅支持 QQ 官方 Bot，发送引用块详情 + 按钮'),
-        Schema.const(OUTPUT_FORMAT.QQ_MARKDOWN_TABLE).description('📊【qqmarkdown_table】QQ Markdown 表格风格：仅支持 QQ 官方 Bot，发送 Markdown 表格 + 按钮'),
-      ]))
-      .role('checkbox')
-      .default([OUTPUT_FORMAT.IMAGE])
-      .description('📤 选择默认输出格式，可多选并按插件内置顺序发送'),
-    imageWidth: Schema
+    textMaxDisplay: Schema
       .number()
-      .min(600).max(1600).step(10)
-      .default(960)
+      .min(1).max(100).step(1)
+      .default(25)
+      .description('📄 文字模式最多显示的比赛数量'),
+  }).description('📄 文字输出配置'),
+
+  // ===== Takumi 图片配置 =====
+  Schema.object({
+    takumiImageMaxDisplay: Schema
+      .number()
+      .min(1).max(100).step(1)
+      .default(50)
+      .description('🖼️ Takumi 图片最多显示的比赛数量'),
+    takumiImageWidth: Schema
+      .number()
+      .min(500).max(2000).step(1)
+      .default(999)
       .description('📐 Takumi 图片宽度'),
-    imageDarkMode: Schema
+    takumiImageDarkMode: Schema
       .boolean()
       .default(true)
       .description('🌙 图片默认深色模式'),
-    imageFontPath: Schema
+    takumiImageFontPath: Schema
       .string()
       .default('')
       .description('🔤 Takumi 自定义字体路径；留空时自动下载并使用 LXGW 文楷'),
-    showRenderInfo: Schema
+    takumiShowRenderInfo: Schema
       .boolean()
       .default(false)
-      .description('⏱️ 发送图片后附加渲染耗时'),
-  }).description('🖼️ 图片输出配置'),
+      .description('⏱️ 发送 Takumi 图片后附加渲染耗时'),
+  }).description('🖼️ Takumi 图片配置'),
+
+  // ===== Puppeteer 图片配置 =====
+  Schema.object({
+    puppeteerImageMaxDisplay: Schema
+      .number()
+      .min(1).max(250).step(1)
+      .default(50)
+      .description('🎨 Puppeteer 图片最多显示的比赛数量'),
+    puppeteerSpotlightMaxContests: Schema
+      .number()
+      .min(1).max(100).step(1)
+      .default(100)
+      .description('🔦 比赛总数不超过该值时，单独突出显示最近一场比赛'),
+    puppeteerImageWidth: Schema
+      .number()
+      .min(600).max(1600).step(1)
+      .default(999)
+      .description('📐 Puppeteer 图片宽度'),
+    puppeteerDeviceScaleFactor: Schema
+      .number()
+      .min(0.5).max(5).step(0.1)
+      .default(2.5)
+      .description('🔍 Puppeteer 截图设备像素比，越高越清晰但图片体积越大'),
+    puppeteerImageDarkMode: Schema
+      .boolean()
+      .default(true)
+      .description('🌙 Puppeteer 图片默认深色模式'),
+    puppeteerImageFontPath: Schema
+      .string()
+      .default('')
+      .description('🔤 Puppeteer 自定义字体路径；留空时自动下载并使用 LXGW 文楷'),
+    puppeteerShowRenderInfo: Schema
+      .boolean()
+      .default(false)
+      .description('⏱️ 发送 Puppeteer 图片后附加渲染耗时'),
+  }).description('🎨 Puppeteer 图片配置'),
 
   // ===== 定时提醒配置 =====
   Schema.object({
@@ -151,7 +214,7 @@ export const Config: Schema<Config> = Schema.intersect([
     qqMarkdownMaxDisplay: Schema
       .number()
       .min(1).max(50).step(1)
-      .default(8)
+      .default(50)
       .description('📊 QQ Markdown 最多展开的比赛数量，格式风格和表格风格共用'),
     qqMarkdownKeyboardJson: Schema.string()
       .role('textarea', { rows: [5, 10] })

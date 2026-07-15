@@ -16,7 +16,7 @@ export const inject = {
 }
 
 export function apply(ctx: Context, config: NotJustCfConfig) {
-  if (config.outputFormats.includes('image') || config.outputFormats.includes('puppeteer_image')) {
+  if (config.outputFormats.includes('takumi_image') || config.outputFormats.includes('puppeteer_image')) {
     ensureLxgwFont(ctx, config).catch((error) => {
       logInfo(
         ctx,

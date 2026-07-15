@@ -2,7 +2,7 @@ export type OjName = 'Codeforces' | 'NowCoder' | 'LeetCode' | 'Luogu' | 'AtCoder
 
 export type OjAlias = 'cf' | 'nc' | 'lc' | 'lg' | 'atc'
 
-export type OutputFormat = 'text' | 'image' | 'puppeteer_image' | 'qqmarkdown_style' | 'qqmarkdown_table'
+export type OutputFormat = 'text' | 'takumi_image' | 'puppeteer_image' | 'qqmarkdown_style' | 'qqmarkdown_table'
 
 export interface Contest {
   oj: OjName | string
@@ -25,6 +25,7 @@ export interface RenderOptions {
   subtitle?: string
   generatedAt?: number
   fontPath?: string
+  totalContestCount?: number
 }
 
 export interface ContestQueryOptions {

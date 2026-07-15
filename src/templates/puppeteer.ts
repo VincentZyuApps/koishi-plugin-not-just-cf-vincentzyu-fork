@@ -6,6 +6,7 @@ import { pathToFileURL } from 'url'
 import type { Context } from 'koishi'
 import type {} from 'koishi-plugin-puppeteer'
 import type { Config } from '../config'
+import { OJ_LIST } from '../constants/oj'
 import type { Contest, RenderOptions } from '../types'
 import { logInfo } from '../utils/logger'
 import { formatDateTime, formatDuration, formatTimeUntil } from '../utils/time'
@@ -115,7 +116,7 @@ function renderPlatformLogo(platform: string, className: string, darkMode: boole
   const presentation = getPlatformPresentation(platform, darkMode)
   const label = escapeHtml(presentation.label)
   if (!presentation.logoDataUrl) return `<span class="logo-mark logo-fallback ${className}">${label}</span>`
-  return `<span class="logo-mark ${className}" role="img" aria-label="${label}"><i class="logo-art ${getPlatformLogoClass(platform)}" style="filter:${presentation.filter}"></i></span>`
+  return `<span class="logo-mark ${className}" role="img" aria-label="${label}"><i class="logo-art ${getPlatformLogoClass(platform)}" style="filter:${presentation.filter};--platform-logo-scale:${presentation.logoScale}"></i></span>`
 }
 
 function renderSpotlight(contest: Contest, darkMode: boolean): string {
@@ -146,9 +147,12 @@ function renderPlatformDistribution(contests: Contest[], darkMode: boolean): str
   const counts = new Map<string, number>()
   for (const contest of contests) counts.set(contest.oj, (counts.get(contest.oj) || 0) + 1)
   const max = Math.max(1, ...counts.values())
-  const rows = Array.from(counts, ([platform, count]) => {
+  const knownPlatforms = new Set<string>(OJ_LIST)
+  const platforms = [...OJ_LIST, ...Array.from(counts.keys()).filter((platform) => !knownPlatforms.has(platform))]
+  const rows = platforms.map((platform) => {
+    const count = counts.get(platform) || 0
     const color = ojColors[platform] || '#667085'
-    const width = Math.max(8, Math.round(count / max * 100))
+    const width = count ? Math.max(8, Math.round(count / max * 100)) : 0
     const presentation = getPlatformPresentation(platform, darkMode)
     return `
       <div class="platform-row">
@@ -158,19 +162,20 @@ function renderPlatformDistribution(contests: Contest[], darkMode: boolean): str
         <strong>${count}</strong>
       </div>`
   }).join('')
-  return rows ? `<div class="platform-grid">${rows}</div>` : '<div class="platform-empty">暂无赛事</div>'
+  return `<div class="platform-grid">${rows}</div>`
 }
 
-export function buildContestHtml(contests: Contest[], options: RenderOptions): string {
+export function buildContestHtml(contests: Contest[], options: RenderOptions, spotlightMaxContests = 10): string {
   const width = options.width || 960
   const dark = options.darkMode
   const title = options.title || '近期算法比赛日程'
   const generatedAt = options.generatedAt || Math.floor(Date.now() / 1000)
+  const totalCount = options.totalContestCount ?? contests.length
   const platforms = Array.from(new Set(contests.map((contest) => contest.oj)))
   const dates = Array.from(new Set(contests.map((contest) => getDateKey(contest.startTime))))
   const fontFace = getFontFace(options.fontPath)
-  const logoStyles = buildPlatformLogoStyles(platforms)
-  const showSpotlight = contests.length > 0 && contests.length <= 8
+  const logoStyles = buildPlatformLogoStyles(Array.from(new Set<string>([...OJ_LIST, ...platforms])))
+  const showSpotlight = contests.length > 0 && totalCount <= spotlightMaxContests
   const scheduleContests = showSpotlight ? contests.slice(1) : contests
   const density = contests.length <= 3 ? 'focus' : contests.length <= 8 ? 'balanced' : 'compact'
   const c = dark
@@ -227,7 +232,7 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
     .metric strong { font-size: 27px; line-height: 1; }
     .metric small { margin-left: 5px; color: ${c.faint}; font-size: 11px; font-weight: 700; }
     .logo-mark { display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 4px; background: ${dark ? 'rgba(229, 232, 236, .42)' : 'rgba(96, 106, 120, .08)'}; }
-    .logo-art { display: block; width: 100%; height: 100%; background-position: center; background-repeat: no-repeat; background-size: contain; }
+    .logo-art { display: block; width: 100%; height: 100%; background-position: center; background-repeat: no-repeat; background-size: contain; transform: scale(var(--context-logo-scale, 1)) scale(var(--platform-logo-scale, 1)); }
     .logo-fallback { color: ${c.muted}; font-size: 9px; font-weight: 900; }
     .platform-panel { min-width: 0; padding: 13px 14px; }
     .panel-title { margin-bottom: 9px; color: ${c.muted}; font-size: 12px; font-weight: 800; }
@@ -236,7 +241,7 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
     .platform-row > strong { font-size: 11px; text-align: right; }
     .platform-name { overflow: hidden; color: ${c.muted}; font-size: 9px; font-weight: 800; white-space: nowrap; }
     .platform-logo { width: 84px; height: 18px; }
-    .platform-logo .logo-art { transform: scale(1.14); }
+    .platform-logo .logo-art { --context-logo-scale: 1.14; }
     .platform-track { height: 2px; overflow: hidden; background: ${c.line}; }
     .platform-track b { display: block; height: 100%; }
     .platform-empty { display: flex; align-items: center; justify-content: center; min-height: 110px; color: ${c.faint}; font-size: 11px; }
@@ -261,7 +266,7 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
     .spotlight-meta small { color: ${c.muted}; font-size: 10px; font-weight: 700; }
     .spotlight-countdown { display: flex; flex-direction: column; justify-content: center; padding: 15px 20px; border-left: 1px solid ${c.line}; background: ${c.surfaceAlt}; }
     .spotlight-logo { width: 160px; height: 42px; margin: 0 auto 11px; }
-    .spotlight-logo .logo-art { transform: scale(1.08); }
+    .spotlight-logo .logo-art { --context-logo-scale: 1.08; }
     .countdown-copy { display: flex; flex-direction: column; align-items: flex-end; }
     .countdown-copy small { color: ${c.muted}; font-size: 11px; font-weight: 800; }
     .countdown-copy strong { margin: 6px 0; color: var(--oj-color); font-size: 27px; line-height: 1.1; text-align: right; }
@@ -295,8 +300,8 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
     .contest-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
     .platform-identity { display: flex; align-items: center; gap: 6px; min-width: 0; }
     .platform-identity > span { overflow: hidden; color: var(--oj-color); font-size: 9px; font-weight: 900; white-space: nowrap; }
-    .card-logo { flex: none; width: 48px; height: 14px; }
-    .card-logo .logo-art { transform: scale(1.12); }
+    .card-logo { flex: none; width: 64px; height: 14px; }
+    .card-logo .logo-art { --context-logo-scale: 1.12; }
     .countdown { color: ${c.muted}; font-size: 10px; font-weight: 700; }
     .contest-name { overflow-wrap: anywhere; font-size: 16px; line-height: 1.38; font-weight: 800; }
     .contest-time {
@@ -329,7 +334,7 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
     </header>
     <section class="overview">
       <div class="metrics">
-        <div class="metric"><span>监控赛事</span><strong>${contests.length}</strong><small>场</small></div>
+        <div class="metric"><span>监控赛事</span><strong>${totalCount}</strong><small>场</small></div>
         <div class="metric"><span>覆盖平台</span><strong>${platforms.length}</strong><small>个</small></div>
         <div class="metric"><span>日程跨度</span><strong>${dates.length}</strong><small>天</small></div>
         <div class="metric"><span>下一场</span><strong>${contests[0] ? escapeHtml(formatTimeUntil(contests[0].startTime)) : '--'}</strong></div>
@@ -340,7 +345,7 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
     ${!contests.length ? '<div class="empty-state"><strong>近期暂无比赛</strong><span>监控窗口内没有即将开始或正在进行的赛事</span></div>' : ''}
     ${scheduleContests.length ? `
       <section class="schedule-section">
-        <header class="schedule-header"><div><span>UPCOMING SCHEDULE</span><h3>${showSpotlight ? '后续赛程' : '全部赛程'}</h3></div><span>${scheduleContests.length} 场待跟进赛事</span></header>
+        <header class="schedule-header"><div><span>UPCOMING SCHEDULE</span><h3>${showSpotlight ? '后续赛程' : '全部赛程'}</h3></div><span>${totalCount > contests.length ? `展示 ${contests.length}/${totalCount} 场` : `${scheduleContests.length} 场待跟进赛事`}</span></header>
         <div class="date-grid ${density}">${renderGroups(scheduleContests, dark)}</div>
       </section>` : ''}
     <footer class="footer"><span>NOT-JUST-CF / OPERATIONS BOARD</span><span>Puppeteer HTML renderer · ${escapeHtml(String(width))}px</span></footer>
@@ -382,10 +387,11 @@ export async function renderContestPuppeteerImage(
   }
 
   const width = options.width || 960
+  const deviceScaleFactor = Math.max(0.5, Math.min(5, Number(config.puppeteerDeviceScaleFactor) || 2.5))
   const renderDir = join(ctx.baseDir, 'data', 'not-just-cf')
   const htmlPath = join(renderDir, `render-${randomUUID()}.html`)
   await mkdir(renderDir, { recursive: true })
-  await writeFile(htmlPath, buildContestHtml(contests, options), 'utf8')
+  await writeFile(htmlPath, buildContestHtml(contests, options, config.puppeteerSpotlightMaxContests), 'utf8')
   let page: Awaited<ReturnType<typeof ctx.puppeteer.page>> | undefined
   try {
     page = await ctx.puppeteer.page()
@@ -398,12 +404,12 @@ export async function renderContestPuppeteerImage(
       '[ERROR] Puppeteer 页面执行异常。',
       `[ERROR] ${error.stack || error.message}`,
     ))
-    await page.setViewport({ width, height: 1000, deviceScaleFactor: 1 })
+    await page.setViewport({ width, height: 1000, deviceScaleFactor })
     const renderStart = Date.now()
     logInfo(
       ctx,
       config,
-      `[Puppeteer] 开始渲染 ${contests.length} 场比赛。`,
+      `[Puppeteer] 开始渲染 ${contests.length} 场比赛，设备像素比 ${deviceScaleFactor}。`,
       `[Puppeteer] 临时 HTML：${htmlPath}`,
     )
     await page.goto(pathToFileURL(htmlPath).href, { waitUntil: 'load', timeout: 15000 })

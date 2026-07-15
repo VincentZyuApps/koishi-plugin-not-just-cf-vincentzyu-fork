@@ -6,7 +6,7 @@ import { ojColors, type ContestTheme } from './theme'
 function ojColor(oj: string): string {
   return ojColors[oj] || '#6b7280'
 }
-export function buildHeader(title: string, subtitle: string, contests: Contest[], t: ContestTheme) {
+export function buildHeader(title: string, subtitle: string, contests: Contest[], t: ContestTheme, totalCount = contests.length) {
   const platforms = Array.from(new Set(contests.map((contest) => contest.oj))).length
   return container({
     style: {
@@ -26,7 +26,7 @@ export function buildHeader(title: string, subtitle: string, contests: Contest[]
       container({
         style: { width: '100%', display: 'flex', gap: 10 },
         children: [
-          buildStat('比赛数', String(contests.length), t),
+          buildStat('比赛数', String(totalCount), t),
           buildStat('平台数', String(platforms), t),
           buildStat('最近开赛', contests[0] ? formatTimeUntil(contests[0].startTime) : '-', t),
         ],
@@ -131,7 +131,7 @@ function estimateTitleLines(title: string, width: number): number {
 
 export function calcHeight(contests: Contest[], width: number): number {
   const header = 178
-  const card = 126
+  const card = 110
   const gap = 10
   const padding = 40
   const footer = 34
