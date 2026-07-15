@@ -96,6 +96,10 @@ contest.list nc
 
 ![Takumi WASM 比赛日程预览](docs/images/preview/preview.takumi.png)
 
+### QQ Markdown 风格与表格模式（`qqmarkdown_style` / `qqmarkdown_table`）
+
+![QQ Markdown 风格与表格比赛日程预览](docs/images/preview/preview.qq-markdown.style.table.png)
+
 ## 🔧 常用配置
 
 | 配置项 | 默认值 | 说明 |

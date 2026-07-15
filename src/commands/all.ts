@@ -26,7 +26,7 @@ export function registerAllCommand(ctx: Context, config: Config) {
         const visibleContests = contests.slice(0, config.takumiImageMaxDisplay)
         const start = Date.now()
         const waiting = config.enableWaitingHint
-          ? (await session.send(`${config.enableQuote ? h.quote(session.messageId) : ''}正在生成比赛日程图片...`))[0]
+          ? (await session.send(`${config.enableQuote ? h.quote(session.messageId) : ''}🖼️ 正在使用 Takumi 生成比赛日程图片...`))[0]
           : null
         try {
           const fontPath = await resolveRenderFont(ctx, config, config.takumiImageFontPath)
@@ -49,7 +49,7 @@ export function registerAllCommand(ctx: Context, config: Config) {
       }
 
       if (usePuppeteerImage) {
-        await sendContestPuppeteerImage(ctx, session, config, contests, '近期算法比赛日程', '正在使用 Puppeteer 生成比赛日程图片...')
+        await sendContestPuppeteerImage(ctx, session, config, contests, '近期算法比赛日程', '🎨 正在使用 Puppeteer 生成比赛日程图片...')
       }
 
       const useQQMarkdown = config.outputFormats.includes('qqmarkdown_style') || config.outputFormats.includes('qqmarkdown_table')
