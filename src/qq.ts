@@ -18,13 +18,19 @@ export const DEFAULT_KEYBOARD_ROWS: KeyboardRows = {
   rows: [
     {
       buttons: [
-        { render_data: { label: '全部比赛', style: 1 }, action: { type: 2, permission: { type: 2 }, data: '${commandNameAll}', enter: true } },
-        { render_data: { label: '牛客', style: 0 }, action: { type: 2, permission: { type: 2 }, data: '${commandNameList} nc', enter: true } },
+        { render_data: { label: '📅 全部比赛', style: 1 }, action: { type: 2, permission: { type: 2 }, data: '${commandNameAll}', enter: true } },
       ],
     },
     {
       buttons: [
         { render_data: { label: 'Codeforces', style: 0 }, action: { type: 2, permission: { type: 2 }, data: '${commandNameList} cf', enter: true } },
+        { render_data: { label: '牛客', style: 0 }, action: { type: 2, permission: { type: 2 }, data: '${commandNameList} nc', enter: true } },
+      ],
+    },
+    {
+      buttons: [
+        { render_data: { label: 'LeetCode', style: 0 }, action: { type: 2, permission: { type: 2 }, data: '${commandNameList} lc', enter: true } },
+        { render_data: { label: '洛谷', style: 0 }, action: { type: 2, permission: { type: 2 }, data: '${commandNameList} lg', enter: true } },
         { render_data: { label: 'AtCoder', style: 0 }, action: { type: 2, permission: { type: 2 }, data: '${commandNameList} atc', enter: true } },
       ],
     },
@@ -85,12 +91,12 @@ function buildTableMarkdown(contests: Contest[], title: string, maxDisplay: numb
   return lines.join('\n')
 }
 
-export function buildContestMarkdown(contests: Contest[], config: Config, title = '算法比赛日程'): string {
+export function buildContestMarkdown(contests: Contest[], config: Config, title = '近期算法比赛日程'): string {
   const maxDisplay = config.qqMarkdownMaxDisplay || 8
   return buildQuoteMarkdown(contests, title, maxDisplay)
 }
 
-export function buildContestMarkdownTable(contests: Contest[], config: Config, title = '算法比赛日程'): string {
+export function buildContestMarkdownTable(contests: Contest[], config: Config, title = '近期算法比赛日程'): string {
   return buildTableMarkdown(contests, title, config.qqMarkdownMaxDisplay || 8)
 }
 

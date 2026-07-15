@@ -9,6 +9,7 @@ import type { Config } from '../config'
 import type { Contest, RenderOptions } from '../types'
 import { logInfo } from '../utils/logger'
 import { formatDateTime, formatDuration, formatTimeUntil } from '../utils/time'
+import { getPlatformPresentation } from './logo'
 import { ojColors } from './theme'
 
 interface ContestGroup {
@@ -63,14 +64,18 @@ function getFontFace(fontPath?: string): string {
   return `@font-face { font-family: "ContestCustom"; src: url("${pathToFileURL(fontPath).href}") format("${format}"); font-display: block; }`
 }
 
-function renderContestCard(contest: Contest): string {
+function renderContestCard(contest: Contest, darkMode: boolean): string {
   const dateTime = formatDateTime(contest.startTime)
   const color = ojColors[contest.oj] || '#667085'
+  const presentation = getPlatformPresentation(contest.oj, darkMode)
   return `
     <article class="contest-card" style="--oj-color: ${color}">
       <div class="contest-main">
         <div class="contest-meta">
-          <span class="oj-name">${escapeHtml(contest.oj)}</span>
+          <span class="platform-identity">
+            ${renderPlatformLogo(contest.oj, 'card-logo', darkMode)}
+            <span>${escapeHtml(presentation.label)}</span>
+          </span>
           <span class="countdown">T-${escapeHtml(formatTimeUntil(contest.startTime))}</span>
         </div>
         <div class="contest-name">${escapeHtml(contest.name)}</div>
@@ -82,23 +87,44 @@ function renderContestCard(contest: Contest): string {
     </article>`
 }
 
-function renderGroups(contests: Contest[]): string {
+function renderGroups(contests: Contest[], darkMode: boolean): string {
   return groupContests(contests).map((group) => `
     <section class="date-group">
       <header class="date-heading">
         <div><span class="date-marker"></span><strong>${escapeHtml(group.date)}</strong></div>
         <span>${escapeHtml(group.label)} / ${group.contests.length} 场</span>
       </header>
-      <div class="contest-list">${group.contests.map(renderContestCard).join('')}</div>
+      <div class="contest-list">${group.contests.map((contest) => renderContestCard(contest, darkMode)).join('')}</div>
     </section>`).join('')
 }
 
-function renderSpotlight(contest: Contest): string {
+function getPlatformLogoClass(platform: string): string {
+  const normalized = platform.toLowerCase().replace(/[^a-z0-9_-]/g, '-')
+  return `platform-logo-${normalized || 'unknown'}`
+}
+
+function buildPlatformLogoStyles(platforms: string[]): string {
+  return platforms.map((platform) => {
+    const presentation = getPlatformPresentation(platform, false)
+    if (!presentation.logoDataUrl) return ''
+    return `.${getPlatformLogoClass(platform)} { background-image: url("${presentation.logoDataUrl}"); }`
+  }).join('\n')
+}
+
+function renderPlatformLogo(platform: string, className: string, darkMode: boolean): string {
+  const presentation = getPlatformPresentation(platform, darkMode)
+  const label = escapeHtml(presentation.label)
+  if (!presentation.logoDataUrl) return `<span class="logo-mark logo-fallback ${className}">${label}</span>`
+  return `<span class="logo-mark ${className}" role="img" aria-label="${label}"><i class="logo-art ${getPlatformLogoClass(platform)}" style="filter:${presentation.filter}"></i></span>`
+}
+
+function renderSpotlight(contest: Contest, darkMode: boolean): string {
   const color = ojColors[contest.oj] || '#667085'
+  const presentation = getPlatformPresentation(contest.oj, darkMode)
   return `
     <section class="spotlight" style="--oj-color: ${color}">
       <div class="spotlight-copy">
-        <div class="section-label"><span>NEXT UP</span><i></i><b>${escapeHtml(contest.oj)}</b></div>
+        <div class="section-label"><span>NEXT UP</span><i></i><b>${escapeHtml(presentation.label)}</b></div>
         <h2>${escapeHtml(contest.name)}</h2>
         <div class="spotlight-meta">
           <span><small>开始时间</small>${escapeHtml(formatDateTime(contest.startTime))}</span>
@@ -106,36 +132,44 @@ function renderSpotlight(contest: Contest): string {
         </div>
       </div>
       <div class="spotlight-countdown">
-        <small>距离开赛</small>
-        <strong>${escapeHtml(formatTimeUntil(contest.startTime))}</strong>
-        <span>Asia/Shanghai</span>
+        ${renderPlatformLogo(contest.oj, 'spotlight-logo', darkMode)}
+        <div class="countdown-copy">
+          <small>距离开赛</small>
+          <strong>${escapeHtml(formatTimeUntil(contest.startTime))}</strong>
+          <span>Asia/Shanghai</span>
+        </div>
       </div>
     </section>`
 }
 
-function renderPlatformDistribution(contests: Contest[]): string {
+function renderPlatformDistribution(contests: Contest[], darkMode: boolean): string {
   const counts = new Map<string, number>()
   for (const contest of contests) counts.set(contest.oj, (counts.get(contest.oj) || 0) + 1)
   const max = Math.max(1, ...counts.values())
-  return Array.from(counts, ([platform, count]) => {
+  const rows = Array.from(counts, ([platform, count]) => {
     const color = ojColors[platform] || '#667085'
     const width = Math.max(8, Math.round(count / max * 100))
+    const presentation = getPlatformPresentation(platform, darkMode)
     return `
       <div class="platform-row">
-        <div class="platform-row-label"><span><i style="background:${color}"></i>${escapeHtml(platform)}</span><strong>${count}</strong></div>
+        ${renderPlatformLogo(platform, 'platform-logo', darkMode)}
+        <span class="platform-name">${escapeHtml(presentation.label)}</span>
         <div class="platform-track"><b style="width:${width}%;background:${color}"></b></div>
+        <strong>${count}</strong>
       </div>`
   }).join('')
+  return rows ? `<div class="platform-grid">${rows}</div>` : '<div class="platform-empty">暂无赛事</div>'
 }
 
 export function buildContestHtml(contests: Contest[], options: RenderOptions): string {
   const width = options.width || 960
   const dark = options.darkMode
-  const title = options.title || '算法比赛日程'
+  const title = options.title || '近期算法比赛日程'
   const generatedAt = options.generatedAt || Math.floor(Date.now() / 1000)
   const platforms = Array.from(new Set(contests.map((contest) => contest.oj)))
   const dates = Array.from(new Set(contests.map((contest) => getDateKey(contest.startTime))))
   const fontFace = getFontFace(options.fontPath)
+  const logoStyles = buildPlatformLogoStyles(platforms)
   const showSpotlight = contests.length > 0 && contests.length <= 8
   const scheduleContests = showSpotlight ? contests.slice(1) : contests
   const density = contests.length <= 3 ? 'focus' : contests.length <= 8 ? 'balanced' : 'compact'
@@ -149,6 +183,7 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
   <meta charset="utf-8">
   <style>
     ${fontFace}
+    ${logoStyles}
     :root { color-scheme: ${dark ? 'dark' : 'light'}; }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
@@ -181,7 +216,7 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
     .sync-state span { color: ${c.muted}; font-size: 12px; }
     .overview {
       display: grid;
-      grid-template-columns: minmax(0, 1.45fr) minmax(260px, .75fr);
+      grid-template-columns: minmax(0, 1fr) minmax(280px, .618fr);
       border-bottom: 1px solid ${c.line};
     }
     .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-right: 1px solid ${c.line}; }
@@ -191,15 +226,20 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
     .metric span { display: block; margin-bottom: 6px; color: ${c.muted}; font-size: 12px; font-weight: 700; }
     .metric strong { font-size: 27px; line-height: 1; }
     .metric small { margin-left: 5px; color: ${c.faint}; font-size: 11px; font-weight: 700; }
-    .platform-panel { padding: 16px 18px; }
-    .panel-title { margin-bottom: 13px; color: ${c.muted}; font-size: 12px; font-weight: 800; }
-    .platform-row { margin-top: 10px; }
-    .platform-row-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
-    .platform-row-label span { display: flex; align-items: center; gap: 7px; color: ${c.muted}; font-weight: 700; }
-    .platform-row-label i { width: 7px; height: 7px; border-radius: 50%; }
-    .platform-row-label strong { font-size: 12px; }
-    .platform-track { height: 3px; overflow: hidden; background: ${c.line}; }
+    .logo-mark { display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 4px; background: ${dark ? 'rgba(229, 232, 236, .42)' : 'rgba(96, 106, 120, .08)'}; }
+    .logo-art { display: block; width: 100%; height: 100%; background-position: center; background-repeat: no-repeat; background-size: contain; }
+    .logo-fallback { color: ${c.muted}; font-size: 9px; font-weight: 900; }
+    .platform-panel { min-width: 0; padding: 13px 14px; }
+    .panel-title { margin-bottom: 9px; color: ${c.muted}; font-size: 12px; font-weight: 800; }
+    .platform-grid { display: flex; flex-direction: column; gap: 6px; }
+    .platform-row { display: grid; grid-template-columns: 84px minmax(78px, auto) minmax(24px, 1fr) 14px; align-items: center; gap: 7px; min-width: 0; min-height: 22px; }
+    .platform-row > strong { font-size: 11px; text-align: right; }
+    .platform-name { overflow: hidden; color: ${c.muted}; font-size: 9px; font-weight: 800; white-space: nowrap; }
+    .platform-logo { width: 84px; height: 18px; }
+    .platform-logo .logo-art { transform: scale(1.14); }
+    .platform-track { height: 2px; overflow: hidden; background: ${c.line}; }
     .platform-track b { display: block; height: 100%; }
+    .platform-empty { display: flex; align-items: center; justify-content: center; min-height: 110px; color: ${c.faint}; font-size: 11px; }
     .spotlight {
       position: relative;
       display: grid;
@@ -219,10 +259,13 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
     .spotlight-meta { display: flex; gap: 30px; color: ${c.text}; font-size: 13px; font-weight: 800; }
     .spotlight-meta span { display: flex; flex-direction: column; gap: 4px; }
     .spotlight-meta small { color: ${c.muted}; font-size: 10px; font-weight: 700; }
-    .spotlight-countdown { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; padding: 20px 22px; border-left: 1px solid ${c.line}; background: ${c.surfaceAlt}; }
-    .spotlight-countdown small { color: ${c.muted}; font-size: 11px; font-weight: 800; }
-    .spotlight-countdown strong { margin: 7px 0; color: var(--oj-color); font-size: 29px; line-height: 1.1; text-align: right; }
-    .spotlight-countdown span { color: ${c.faint}; font-size: 10px; }
+    .spotlight-countdown { display: flex; flex-direction: column; justify-content: center; padding: 15px 20px; border-left: 1px solid ${c.line}; background: ${c.surfaceAlt}; }
+    .spotlight-logo { width: 160px; height: 42px; margin: 0 auto 11px; }
+    .spotlight-logo .logo-art { transform: scale(1.08); }
+    .countdown-copy { display: flex; flex-direction: column; align-items: flex-end; }
+    .countdown-copy small { color: ${c.muted}; font-size: 11px; font-weight: 800; }
+    .countdown-copy strong { margin: 6px 0; color: var(--oj-color); font-size: 27px; line-height: 1.1; text-align: right; }
+    .countdown-copy span { color: ${c.faint}; font-size: 10px; }
     .schedule-section { margin-top: 24px; }
     .schedule-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 13px; padding: 0 2px; }
     .schedule-header div span { display: block; margin-bottom: 4px; color: ${c.accent}; font-size: 10px; font-weight: 900; }
@@ -249,8 +292,11 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
     }
     .contest-card::before { content: ""; position: absolute; inset: 16px auto 16px 0; width: 3px; background: var(--oj-color); }
     .contest-main { min-width: 0; padding: 14px 15px 13px 14px; }
-    .contest-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
-    .oj-name { color: var(--oj-color); font-size: 12px; font-weight: 900; }
+    .contest-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+    .platform-identity { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .platform-identity > span { overflow: hidden; color: var(--oj-color); font-size: 9px; font-weight: 900; white-space: nowrap; }
+    .card-logo { flex: none; width: 48px; height: 14px; }
+    .card-logo .logo-art { transform: scale(1.12); }
     .countdown { color: ${c.muted}; font-size: 10px; font-weight: 700; }
     .contest-name { overflow-wrap: anywhere; font-size: 16px; line-height: 1.38; font-weight: 800; }
     .contest-time {
@@ -288,14 +334,14 @@ export function buildContestHtml(contests: Contest[], options: RenderOptions): s
         <div class="metric"><span>日程跨度</span><strong>${dates.length}</strong><small>天</small></div>
         <div class="metric"><span>下一场</span><strong>${contests[0] ? escapeHtml(formatTimeUntil(contests[0].startTime)) : '--'}</strong></div>
       </div>
-      <div class="platform-panel"><div class="panel-title">平台赛事分布</div>${renderPlatformDistribution(contests)}</div>
+      <div class="platform-panel"><div class="panel-title">平台赛事分布</div>${renderPlatformDistribution(contests, dark)}</div>
     </section>
-    ${showSpotlight ? renderSpotlight(contests[0]) : ''}
+    ${showSpotlight ? renderSpotlight(contests[0], dark) : ''}
     ${!contests.length ? '<div class="empty-state"><strong>近期暂无比赛</strong><span>监控窗口内没有即将开始或正在进行的赛事</span></div>' : ''}
     ${scheduleContests.length ? `
       <section class="schedule-section">
         <header class="schedule-header"><div><span>UPCOMING SCHEDULE</span><h3>${showSpotlight ? '后续赛程' : '全部赛程'}</h3></div><span>${scheduleContests.length} 场待跟进赛事</span></header>
-        <div class="date-grid ${density}">${renderGroups(scheduleContests)}</div>
+        <div class="date-grid ${density}">${renderGroups(scheduleContests, dark)}</div>
       </section>` : ''}
     <footer class="footer"><span>NOT-JUST-CF / OPERATIONS BOARD</span><span>Puppeteer HTML renderer · ${escapeHtml(String(width))}px</span></footer>
   </main>

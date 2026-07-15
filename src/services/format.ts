@@ -14,9 +14,9 @@ export function formatContestText(contest: Contest): string {
 }
 
 export function formatContestListText(contests: Contest[]): string {
-  if (!contests.length) return '📅 算法比赛日程\n\n暂无比赛'
+  if (!contests.length) return '📅 近期算法比赛日程\n\n暂无比赛'
   return [
-    `📅 算法比赛日程`,
+    `📅 近期算法比赛日程`,
     `📌 共 ${contests.length} 场比赛`,
     '',
     contests.map(formatContestText).join(''),

@@ -32,7 +32,7 @@ export function registerAllCommand(ctx: Context, config: Config) {
             width: config.imageWidth,
             darkMode: config.imageDarkMode,
             fontPath,
-            title: '算法比赛日程',
+            title: '近期算法比赛日程',
           })
           const payload = [
             ...(config.enableQuote ? [h.quote(session.messageId)] : []),
@@ -46,13 +46,13 @@ export function registerAllCommand(ctx: Context, config: Config) {
       }
 
       if (usePuppeteerImage) {
-        await sendContestPuppeteerImage(ctx, session, config, contests, '算法比赛日程', '正在使用 Puppeteer 生成比赛日程图片...')
+        await sendContestPuppeteerImage(ctx, session, config, contests, '近期算法比赛日程', '正在使用 Puppeteer 生成比赛日程图片...')
       }
 
       const useQQMarkdown = config.outputFormats.includes('qqmarkdown_style') || config.outputFormats.includes('qqmarkdown_table')
       if (!useText && !useImage && !usePuppeteerImage && !useQQMarkdown) {
         await session.send(`${config.enableQuote ? h.quote(session.messageId) : ''}未启用任何输出格式，请在配置中选择 text / image / puppeteer_image / qqmarkdown_style / qqmarkdown_table。`)
       }
-      await sendContestQQMarkdown(session, config, contests, '算法比赛日程')
+      await sendContestQQMarkdown(session, config, contests, '近期算法比赛日程')
     })
 }
