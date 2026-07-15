@@ -1,8 +1,22 @@
 import type { Context } from 'koishi'
 import type { Config } from '../config'
+import { fetchAtcoderContests } from '../fetchers/atcoder'
+import { fetchCodeforcesContests } from '../fetchers/codeforces'
+import { fetchLeetCodeContests } from '../fetchers/leetcode'
+import { fetchLuoguContests } from '../fetchers/luogu'
+import { fetchNowCoderContests } from '../fetchers/nowcoder'
 import type { Contest, OjName } from '../types'
-import { fetchContestsByOj } from '../fetchers'
 import { logInfo } from '../utils/logger'
+
+type ContestFetcher = (ctx: Context, config: Config) => Promise<Contest[]>
+
+const CONTEST_FETCHERS: Record<OjName, ContestFetcher> = {
+  Codeforces: fetchCodeforcesContests,
+  NowCoder: fetchNowCoderContests,
+  LeetCode: fetchLeetCodeContests,
+  Luogu: fetchLuoguContests,
+  AtCoder: fetchAtcoderContests,
+}
 
 export function sortContests(contests: Contest[]): Contest[] {
   return contests.slice().sort((a, b) => a.startTime - b.startTime)
@@ -10,7 +24,7 @@ export function sortContests(contests: Contest[]): Contest[] {
 export async function getContests(ctx: Context, config: Config, ojs: OjName[] = config.enabledOjs): Promise<Contest[]> {
   const groups = await Promise.all(ojs.map(async (oj) => {
     try {
-      return await fetchContestsByOj(ctx, config, oj)
+      return await CONTEST_FETCHERS[oj](ctx, config)
     } catch (error: any) {
       logInfo(
         ctx,

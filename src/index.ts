@@ -1,7 +1,8 @@
 import type { Context } from 'koishi'
+import { registerAllCommand } from './commands/all'
+import { registerListCommand } from './commands/list'
 import type { Config as NotJustCfConfig } from './config'
 import { Config as ConfigSchema } from './config'
-import { registerCommands } from './commands'
 import { registerAlerts } from './services/alert'
 import { ensureLxgwFont } from './utils/font'
 import { ensureRuntimeAssets } from './utils/assets'
@@ -37,6 +38,7 @@ export function apply(ctx: Context, config: NotJustCfConfig) {
       )
     })
   }
-  registerCommands(ctx, config)
+  registerAllCommand(ctx, config)
+  registerListCommand(ctx, config)
   registerAlerts(ctx, config)
 }

@@ -4,7 +4,7 @@ import { getContests } from '../services/contest'
 import { formatContestListText, getContestWindowText } from '../services/format'
 import { renderContestTakumiImage } from '../templates/takumi'
 import { sendContestQQMarkdown } from '../qq'
-import { sendContestPuppeteerImage } from './puppeteer'
+import { sendContestPuppeteerImage } from './image'
 import { resolveRenderFont } from '../utils/font'
 
 export function registerAllCommand(ctx: Context, config: Config) {

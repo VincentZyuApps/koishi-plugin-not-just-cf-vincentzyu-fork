@@ -1,7 +1,7 @@
 import { h, type Context, type Session } from 'koishi'
 import type { Config } from '../config'
-import type { Contest } from '../types'
 import { renderContestPuppeteerImage } from '../templates/puppeteer'
+import type { Contest } from '../types'
 import { resolveRenderFont } from '../utils/font'
 import { logInfo } from '../utils/logger'
 
