@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-not-just-cf-vincentzyu-fork",
   "description": "📅🏆 聚合 Codeforces、NowCoder、LeetCode、Luogu 与 AtCoder 的 Koishi 多平台算法赛事助手，支持日程查询、每日与赛前提醒、QQ Markdown 交互，以及 Takumi 和 Puppeteer 双引擎图片输出。🖼️",
-  "version": "2.1.4-beta.5+20260716",
+  "version": "2.1.5-beta.6+20260716",
   "contributors": [
     "lzh 647983952@qq.com",
     "FaulknerWu faulkner_wu@outlook.com",

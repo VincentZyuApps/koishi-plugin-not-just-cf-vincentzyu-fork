@@ -42,6 +42,7 @@ export interface Config {
   puppeteerImageMaxDisplay: number
   puppeteerSpotlightMaxContests: number
   puppeteerImageWidth: number
+  puppeteerScheduleColumns: number
   puppeteerDeviceScaleFactor: number
   puppeteerImageDarkMode: boolean
   puppeteerImageFontPath: string
@@ -168,6 +169,13 @@ export const Config: Schema<Config> = Schema.intersect([
       .min(600).max(1600).step(1)
       .default(999)
       .description('📐 Puppeteer 图片宽度'),
+    puppeteerScheduleColumns: Schema
+      .number()
+      .min(1).max(4).step(1)
+      .default(3)
+      .experimental()
+      .disabled()
+      .description('🧪 Puppeteer 后续赛程每行列数；实验性配置，当前暂不开放修改'),
     puppeteerDeviceScaleFactor: Schema
       .number()
       .min(0.5).max(5).step(0.1)

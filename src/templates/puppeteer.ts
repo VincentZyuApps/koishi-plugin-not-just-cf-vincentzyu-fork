@@ -78,11 +78,11 @@ function renderContestCard(contest: Contest, darkMode: boolean, logoDir: string)
             ${renderPlatformLogo(contest.oj, 'card-logo', darkMode, logoDir)}
             <span>${escapeHtml(presentation.label)}</span>
           </span>
-          <span class="countdown">T-${escapeHtml(formatTimeUntil(contest.startTime))}</span>
         </div>
         <div class="contest-name">${escapeHtml(contest.name)}</div>
       </div>
       <div class="contest-time">
+        <span class="countdown">T-${escapeHtml(formatTimeUntil(contest.startTime))}</span>
         <strong>${escapeHtml(dateTime.slice(11, 16))}</strong>
         <span>${escapeHtml(formatDuration(contest.duration))}</span>
       </div>
@@ -171,6 +171,7 @@ export function buildContestHtml(
   options: RenderOptions,
   logoDir: string,
   spotlightMaxContests = 10,
+  puppeteerScheduleColumns = 3,
 ): string {
   const width = options.width || 960
   const dark = options.darkMode
@@ -181,6 +182,7 @@ export function buildContestHtml(
   const dates = Array.from(new Set(contests.map((contest) => getDateKey(contest.startTime))))
   const fontFace = getFontFace(options.fontPath)
   const logoStyles = buildPlatformLogoStyles(Array.from(new Set<string>([...OJ_LIST, ...platforms])), logoDir)
+  const scheduleColumns = Math.max(1, Math.min(4, Math.trunc(Number(puppeteerScheduleColumns) || 3)))
   const showSpotlight = contests.length > 0 && totalCount <= spotlightMaxContests
   const scheduleContests = showSpotlight ? contests.slice(1) : contests
   const density = contests.length <= 3 ? 'focus' : contests.length <= 8 ? 'balanced' : 'compact'
@@ -282,20 +284,18 @@ export function buildContestHtml(
     .schedule-header div span { display: block; margin-bottom: 4px; color: ${c.accent}; font-size: 10px; font-weight: 900; }
     .schedule-header h3 { margin: 0; font-size: 21px; }
     .schedule-header > span { color: ${c.muted}; font-size: 11px; font-weight: 700; }
-    .date-grid { display: grid; gap: 20px 18px; }
-    .date-grid.focus { grid-template-columns: 1fr; }
-    .date-grid.balanced, .date-grid.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .date-group:only-child { grid-column: 1 / -1; }
+    .date-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .date-group { min-width: 0; }
     .date-heading { display: flex; align-items: baseline; justify-content: space-between; padding: 0 2px 9px; border-bottom: 1px solid ${c.line}; }
     .date-heading div { display: flex; align-items: center; gap: 8px; }
     .date-marker { width: 3px; height: 15px; background: ${c.accent}; }
     .date-heading strong { font-size: 17px; }
     .date-heading > span { color: ${c.muted}; font-size: 11px; font-weight: 700; }
-    .contest-list { display: flex; flex-direction: column; gap: 8px; }
+    .contest-list { display: grid; grid-template-columns: repeat(${scheduleColumns}, minmax(0, 1fr)); grid-auto-flow: row; gap: 8px 12px; }
     .contest-card {
       position: relative;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 108px;
+      grid-template-columns: minmax(0, 1fr) 82px;
       min-height: 96px;
       overflow: hidden;
       border-bottom: 1px solid ${c.line};
@@ -308,7 +308,7 @@ export function buildContestHtml(
     .platform-identity > span { overflow: hidden; color: var(--oj-color); font-size: 9px; font-weight: 900; white-space: nowrap; }
     .card-logo { flex: none; width: 64px; height: 14px; }
     .card-logo .logo-art { --context-logo-scale: 1.12; }
-    .countdown { color: ${c.muted}; font-size: 10px; font-weight: 700; }
+    .countdown { color: ${c.muted}; font-size: 9px; line-height: 1.2; font-weight: 700; white-space: nowrap; }
     .contest-name { overflow-wrap: anywhere; font-size: 16px; line-height: 1.38; font-weight: 800; }
     .contest-time {
       display: flex;
@@ -316,7 +316,7 @@ export function buildContestHtml(
       align-items: flex-end;
       justify-content: center;
       gap: 5px;
-      padding: 13px 14px;
+      padding: 11px 8px;
       border-left: 1px solid ${c.line};
       background: ${c.surfaceAlt};
     }
@@ -326,6 +326,9 @@ export function buildContestHtml(
     .date-grid.compact .contest-main { padding-top: 11px; padding-bottom: 10px; }
     .date-grid.compact .contest-name { font-size: 14px; }
     .date-grid.compact .contest-time strong { font-size: 18px; }
+    @media (max-width: 760px) {
+      .contest-list { grid-template-columns: minmax(0, 1fr); }
+    }
     .empty-state { display: flex; flex-direction: column; align-items: center; gap: 7px; margin-top: 20px; padding: 52px 20px; border: 1px solid ${c.line}; border-radius: 8px; background: ${c.surface}; }
     .empty-state strong { font-size: 22px; }
     .empty-state span { color: ${c.muted}; font-size: 14px; }
@@ -399,7 +402,11 @@ export async function renderContestPuppeteerImage(
   const renderDir = join(ctx.baseDir, 'data', 'not-just-cf')
   const htmlPath = join(renderDir, `render-${randomUUID()}.html`)
   await mkdir(renderDir, { recursive: true })
-  await writeFile(htmlPath, buildContestHtml(contests, options, logoDir, config.puppeteerSpotlightMaxContests), 'utf8')
+  await writeFile(
+    htmlPath,
+    buildContestHtml(contests, options, logoDir, config.puppeteerSpotlightMaxContests, config.puppeteerScheduleColumns),
+    'utf8',
+  )
   let page: Awaited<ReturnType<typeof ctx.puppeteer.page>> | undefined
   try {
     page = await ctx.puppeteer.page()

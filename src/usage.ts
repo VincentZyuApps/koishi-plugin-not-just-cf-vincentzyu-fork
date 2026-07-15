@@ -23,7 +23,7 @@ export const usage = `
     <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript">
   </a>
   <a href="https://pptr.dev/" target="_blank">
-    <img src="https://img.shields.io/badge/Puppeteer-HTML-40B5A4?style=flat-square&logo=puppeteer&logoColor=white" alt="Puppeteer HTML">
+    <img src="https://img.shields.io/badge/Puppeteer-HTML-40B5A4?style=flat-square&logo=googlechrome&logoColor=white" alt="Puppeteer HTML">
   </a>
   <a href="https://github.com/kane50613/takumi" target="_blank">
     <img src="https://img.shields.io/badge/Takumi-WASM-654FF0?style=flat-square&logo=webassembly&logoColor=white" alt="Takumi WASM">

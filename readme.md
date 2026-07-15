@@ -10,7 +10,7 @@
 [![license](https://img.shields.io/badge/license-MIT-2ea44f?style=flat-square&logo=opensourceinitiative&logoColor=white)](https://opensource.org/license/mit)
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Puppeteer](https://img.shields.io/badge/Puppeteer-HTML-40B5A4?style=flat-square&logo=puppeteer&logoColor=white)](https://pptr.dev/)
+[![Puppeteer](https://img.shields.io/badge/Puppeteer-HTML-40B5A4?style=flat-square&logo=googlechrome&logoColor=white)](https://pptr.dev/)
 [![WebAssembly](https://img.shields.io/badge/Takumi-WASM-654FF0?style=flat-square&logo=webassembly&logoColor=white)](https://github.com/kane50613/takumi)
 
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/VincentZyuApps/koishi-plugin-not-just-cf-vincentzyu-fork)
@@ -123,6 +123,7 @@ contest.list nc
 | `puppeteerImageMaxDisplay` | `50` | Puppeteer 图片最多显示的比赛数量 |
 | `puppeteerSpotlightMaxContests` | `100` | 比赛总数不超过该值时，单独突出显示最近一场比赛 |
 | `puppeteerImageWidth` | `999` | Puppeteer 图片宽度 |
+| `puppeteerScheduleColumns` | `3` | Puppeteer 后续赛程每行列数，实验性只读配置 |
 | `puppeteerDeviceScaleFactor` | `2.5` | Puppeteer 截图设备像素比，越高越清晰但图片体积越大 |
 | `puppeteerImageDarkMode` | `true` | Puppeteer 图片是否使用深色模式 |
 | `puppeteerImageFontPath` | 空 | Puppeteer 自定义字体；留空自动使用 LXGW 文楷 |
