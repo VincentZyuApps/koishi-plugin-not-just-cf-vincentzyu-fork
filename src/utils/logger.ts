@@ -39,6 +39,10 @@ export function logInfo(
   if (msg2 && (config.verboseConsoleLog || verbose)) ctx.logger.info(msg2)
 }
 
+export function logVerbose(ctx: Context, config: Config, message: string) {
+  if (config.verboseConsoleLog) ctx.logger.info(message)
+}
+
 function jsonReplacer(_key: string, value: unknown) {
   if (typeof value === 'bigint') return value.toString()
   if (value instanceof Error) {

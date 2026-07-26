@@ -78,15 +78,15 @@ export const Config: Schema<Config> = Schema.intersect([
       ]))
       .role('checkbox')
       .default([OUTPUT_FORMAT.PUPPETEER_IMAGE, OUTPUT_FORMAT.QQ_MARKDOWN_TABLE])
-      .description('📤 选择默认输出格式，可多选并按插件内置顺序发送'),
+      .description('📤 选择指令查询回复（被动消息）与定时提醒推送（主动消息）共用的输出格式，可多选并按插件内置顺序发送'),
     enableQuote: Schema
       .boolean()
       .default(true)
-      .description('💬 回复时引用触发消息'),
+      .description('💬 指令查询回复时引用触发消息；定时主动推送不引用消息'),
     enableWaitingHint: Schema
       .boolean()
       .default(true)
-      .description('⏳ 图片渲染时发送等待提示'),
+      .description('⏳ 指令触发图片渲染时发送等待提示；定时主动推送在后台静默渲染'),
   }).description('💬 消息设置'),
 
   // ===== 基础命令配置 =====
@@ -239,7 +239,7 @@ export const Config: Schema<Config> = Schema.intersect([
 
   // ===== 调试配置 =====
   Schema.object({
-    verboseConsoleLog: Schema.boolean().default(false).description('🐛 输出详细调试日志'),
+    verboseConsoleLog: Schema.boolean().default(false).description('🐛 输出详细调试日志，包括不兼容输出格式的静默跳过记录'),
     verboseFileLog: Schema
       .boolean()
       .default(false)

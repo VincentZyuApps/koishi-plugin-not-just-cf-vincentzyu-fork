@@ -13,11 +13,15 @@ export function formatContestText(contest: Contest): string {
   ].join('\n')
 }
 
-export function formatContestListText(contests: Contest[], totalCount = contests.length): string {
-  if (!contests.length) return '📅 近期算法比赛日程\n\n暂无比赛'
+export function formatContestListText(
+  contests: Contest[],
+  totalCount = contests.length,
+  title = '近期算法比赛日程',
+): string {
+  if (!contests.length) return `📅 ${title}\n\n暂无比赛`
   const omittedCount = Math.max(0, totalCount - contests.length)
   const lines = [
-    `📅 近期算法比赛日程`,
+    `📅 ${title}`,
     `📌 共 ${totalCount} 场比赛${omittedCount ? `，当前展示前 ${contests.length} 场` : ''}`,
     '',
     contests.map(formatContestText).join(''),

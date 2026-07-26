@@ -23,7 +23,7 @@ export function apply(ctx: Context, config: NotJustCfConfig) {
       logInfo(
         ctx,
         config,
-        '[WARN] 图片字体预检查失败，将在命令执行时重试。',
+        '[WARN] 图片字体预检查失败，将在下次输出时重试。',
         `[WARN] ${error instanceof Error ? error.stack || error.message : error}`,
       )
     })
@@ -33,7 +33,7 @@ export function apply(ctx: Context, config: NotJustCfConfig) {
       logInfo(
         ctx,
         config,
-        '[WARN] Puppeteer 运行时资源预检查失败，将在命令执行时重试。',
+        '[WARN] Puppeteer 运行时资源预检查失败，将在下次输出时重试。',
         `[WARN] ${error instanceof Error ? error.stack || error.message : error}`,
       )
     })

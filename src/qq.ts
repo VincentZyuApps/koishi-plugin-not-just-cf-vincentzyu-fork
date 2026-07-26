@@ -1,9 +1,9 @@
 import { h } from 'koishi'
-import type { Session } from 'koishi'
+import type { Context, Session } from 'koishi'
 import type { Config } from './config'
 import type { Contest } from './types'
 import { formatDateTime, formatDuration, formatTimeUntil } from './utils/time'
-import { logInfo } from './utils/logger'
+import { logInfo, logVerbose } from './utils/logger'
 
 export interface KeyboardButton {
   render_data: { label: string; style: number }
@@ -12,6 +12,14 @@ export interface KeyboardButton {
 
 export interface KeyboardRows {
   rows: { buttons: KeyboardButton[] }[]
+}
+
+export interface QQMarkdownMessageTarget {
+  bot: any
+  channelId: string
+  messageId?: string
+  timestamp?: number
+  send?: (content: any) => Promise<unknown>
 }
 
 export const DEFAULT_KEYBOARD_ROWS: KeyboardRows = {
@@ -114,16 +122,19 @@ export function buildContestKeyboard(config: Config, customJson?: string): objec
   return DEFAULT_KEYBOARD_ROWS
 }
 
-export async function sendQQMarkdown(
-  session: any,
+export async function sendQQMarkdownToTarget(
+  ctx: Context,
+  target: QQMarkdownMessageTarget,
   config: Config,
   markdown: string,
   keyboard: object,
   throwOnError = false,
 ): Promise<void> {
   try {
-    if (session.bot?.config?.autoStreamText) {
-      await session.send(h('qq:rawmarkdown', { content: markdown, keyboard }))
+    if (target.bot?.config?.autoStreamText) {
+      const content = h('qq:rawmarkdown', { content: markdown, keyboard })
+      if (target.send) await target.send(content)
+      else await target.bot.sendMessage(target.channelId, content)
       return
     }
 
@@ -133,20 +144,20 @@ export async function sendQQMarkdown(
     }
     if ((keyboard as any)?.rows?.length) payload.keyboard = { content: keyboard }
 
-    const msgId = session.messageId
+    const msgId = target.messageId
     if (msgId) {
       const now = Date.now()
-      const msgTime = session.timestamp ?? now
+      const msgTime = target.timestamp ?? now
       if (now - msgTime < 300000) {
         payload.msg_id = msgId
         payload.msg_seq = Math.floor(Math.random() * 0xffffff) + 1
       }
     }
 
-    await session.bot.internal.sendMessage(session.channelId, payload)
+    await target.bot.internal.sendMessage(target.channelId, payload)
   } catch (error) {
     logInfo(
-      session.app,
+      ctx,
       config,
       '[WARN] QQ Markdown 发送失败，不影响其他输出格式。',
       `[WARN] ${error instanceof Error ? error.stack || error.message : error}`,
@@ -155,8 +166,41 @@ export async function sendQQMarkdown(
   }
 }
 
+export async function sendQQMarkdown(
+  session: Session,
+  config: Config,
+  markdown: string,
+  keyboard: object,
+  throwOnError = false,
+): Promise<void> {
+  await sendQQMarkdownToTarget(
+    session.app,
+    {
+      bot: session.bot,
+      channelId: session.channelId,
+      messageId: session.messageId,
+      timestamp: session.timestamp,
+      send: (content) => session.send(content),
+    },
+    config,
+    markdown,
+    keyboard,
+    throwOnError,
+  )
+}
+
 export async function sendContestQQMarkdown(session: Session, config: Config, contests: Contest[], title: string): Promise<void> {
-  if (!isQQOfficialSession(session)) return
+  if (!isQQOfficialSession(session)) {
+    const formats = config.outputFormats.filter((format) => format === 'qqmarkdown_style' || format === 'qqmarkdown_table')
+    if (formats.length) {
+      logVerbose(
+        session.app,
+        config,
+        `[输出] 目标 ${session.platform}:${session.channelId} 不是 QQ 官方 Bot，已跳过 ${formats.join('、')}。`,
+      )
+    }
+    return
+  }
   const keyboard = buildContestKeyboard(config, config.qqMarkdownKeyboardJson)
   if (config.outputFormats.includes('qqmarkdown_style')) {
     await sendQQMarkdown(session, config, buildContestMarkdown(contests, config, title), keyboard)

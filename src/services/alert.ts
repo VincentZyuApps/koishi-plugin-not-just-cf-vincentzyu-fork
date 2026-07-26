@@ -2,8 +2,7 @@ import type { Context } from 'koishi'
 import type { Config } from '../config'
 import type { Contest } from '../types'
 import { getContests } from './contest'
-import { formatContestListText, formatContestText } from './format'
-import { sendToAlertTargets } from './bot'
+import { sendContestOutputsToAlertTargets } from './output'
 import { shouldScheduleBeforeAlert } from '../utils/filter'
 import { logInfo } from '../utils/logger'
 
@@ -25,8 +24,7 @@ export function registerAlerts(ctx: Context, config: Config) {
 
   async function sendDailyAlert() {
     const contests = await getContests(ctx, config)
-    const visibleContests = contests.slice(0, config.textMaxDisplay)
-    await sendToAlertTargets(ctx, config, formatContestListText(visibleContests, contests.length))
+    await sendContestOutputsToAlertTargets(ctx, config, contests, '近期算法比赛日程')
   }
 
   function scheduleCronAlert() {
@@ -57,10 +55,11 @@ export function registerAlerts(ctx: Context, config: Config) {
     const delay = contest.startTime * 1000 - Date.now() - config.alertBeforeMinutes * 60 * 1000
     scheduledBefore.add(key)
     addDisposer(ctx.timer.setTimeout(async () => {
-      await sendToAlertTargets(
+      await sendContestOutputsToAlertTargets(
         ctx,
         config,
-        `${formatContestText(contest)}距离比赛开始还有${config.alertBeforeMinutes}分钟`,
+        [contest],
+        `比赛即将开始｜提前 ${config.alertBeforeMinutes} 分钟提醒`,
       )
     }, delay))
   }
