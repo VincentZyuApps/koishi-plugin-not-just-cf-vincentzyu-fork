@@ -36,8 +36,8 @@ export const usage = `
     <img src="https://img.shields.io/badge/Gitee-C71D23?style=for-the-badge&logo=gitee&logoColor=white" alt="Gitee">
   </a>
   <br>
-  <a href="https://forum.koishi.xyz/t/topic/xxxxx" target="_blank">
-    <img src="https://img.shields.io/badge/Koishi%20Forum-xxxxx-5546A3?style=for-the-badge&logo=${KOISHI_LOGO_BASE64}&logoColor=white" alt="Koishi Forum">
+  <a href="https://forum.koishi.xyz/t/topic/8319" target="_blank">
+    <img src="https://img.shields.io/badge/Koishi%20Forum-8319-5546A3?style=for-the-badge&logo=${KOISHI_LOGO_BASE64}&logoColor=white" alt="Koishi Forum">
   </a>
   <a href="https://qm.qq.com/q/4REAsoZiFy" target="_blank">
     <img src="https://img.shields.io/badge/QQ%E7%BE%A4-1085190201-12B7F5?style=flat-square&logo=qq&logoColor=white" alt="QQ群">
